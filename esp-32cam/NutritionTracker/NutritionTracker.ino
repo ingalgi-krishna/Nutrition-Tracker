@@ -21,11 +21,11 @@
 #include <base64.h>
 
 // Wi-Fi credentials - replace with your network details
-const char *ssid = "YOUR_WIFI_SSID";
-const char *password = "YOUR_WIFI_PASSWORD";
+const char *ssid = "Flat 7";
+const char *password = "O@8767465446";
 
 // Server endpoint - replace with your actual server
-const char *serverUrl = "https://your-nutrition-tracker-app.com/api/upload-image";
+const char *serverUrl = "http://localhost:3000/api/upload-image";
 // UserID - replace with your actual user ID
 const char *userId = "your_user_id";
 

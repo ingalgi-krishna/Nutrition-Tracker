@@ -70,7 +70,7 @@ select {
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/fonts/Inter-Regular.woff2') format('woff2');
+  src: url('/fonts/Inter-Regular.ttf') format('ttf');
 }
 
 @font-face {
@@ -78,7 +78,7 @@ select {
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url('/fonts/Inter-Medium.woff2') format('woff2');
+  src: url('/fonts/Inter-Medium.ttf') format('ttf');
 }
 
 @font-face {

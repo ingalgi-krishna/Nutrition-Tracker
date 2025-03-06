@@ -1,15 +1,10 @@
-
-// src/app/api/upload-image/route.ts
 import { NextResponse } from 'next/server';
-import { analyzeFoodImage } from '@/lib/gemini';
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import connectToDatabase from '@/lib/mongodb';
+import FoodEntry from '../../models/FoodEntry';
 
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '10mb',
-    },
-  },
-};
+// Initialize the Gemini API
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export async function POST(req: Request) {
   try {
@@ -30,20 +25,96 @@ export async function POST(req: Request) {
       );
     }
 
-    // Analyze the image using Gemini Vision API
-    const foodAnalysis = await analyzeFoodImage(imageBase64);
-    
-    // Here you would normally save the image to a storage service
-    // For simplicity, we'll just return the analysis results
-    // In a real app, you would save the image URL and create a food entry
+    // Convert base64 to the format expected by Gemini
+    const base64Data = imageBase64.replace(/^data:image\/(png|jpeg|jpg);base64,/, '');
+    const mimeType = imageBase64.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
+
+    // Prepare the image for Gemini API
+    const imagePart = {
+      inlineData: {
+        data: base64Data,
+        mimeType: mimeType
+      },
+    };
+
+    // Prepare the prompt for food analysis
+    const prompt = `
+      Analyze this food image and provide the following information:
+      1. The name of the food item
+      2. Nutritional information per serving including:
+         - Calories
+         - Proteins (in grams)
+         - Carbohydrates (in grams)
+         - Fats (in grams)
+      
+      Respond in a structured JSON format like this:
+      {
+        "foodName": "Name of the food",
+        "nutrition": {
+          "calories": number,
+          "proteins": number,
+          "carbs": number,
+          "fats": number
+        }
+      }
+      
+      Only provide this JSON structure, no other text.
+    `;
+
+    // Call the Gemini API
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent([prompt, imagePart]);
+    const response = await result.response;
+    const text = response.text();
+
+    // Parse the JSON response from Gemini
+    let foodData;
+    try {
+      // Try to extract JSON from the text (it might be wrapped in markdown code blocks)
+      const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) || 
+                      text.match(/```\s*([\s\S]*?)\s*```/) || 
+                      [null, text];
+      
+      const jsonString = jsonMatch[1] || text;
+      foodData = JSON.parse(jsonString.trim());
+    } catch (parseError) {
+      console.error('Error parsing Gemini response:', parseError, text);
+      return NextResponse.json(
+        { success: false, error: 'Failed to parse nutritional information', rawResponse: text },
+        { status: 500 }
+      );
+    }
+
+    // Save to database if needed
+    if (process.env.SAVE_TO_DB !== 'false') {
+      try {
+        await connectToDatabase();
+        
+        const foodEntry = new FoodEntry({
+          userId,
+          foodName: foodData.foodName,
+          calories: foodData.nutrition.calories,
+          proteins: foodData.nutrition.proteins,
+          carbs: foodData.nutrition.carbs,
+          fats: foodData.nutrition.fats,
+          imageUrl: imageBase64, // In production, use a proper storage solution
+          timestamp: new Date(),
+        });
+        
+        await foodEntry.save();
+      } catch (dbError) {
+        console.error('Error saving to database:', dbError);
+        // Continue even if DB save fails - we'll return the analysis results
+      }
+    }
     
     return NextResponse.json(
       { 
         success: true, 
         data: {
           userId,
-          ...foodAnalysis,
-          // You would include the image URL here after uploading
+          foodName: foodData.foodName,
+          nutrition: foodData.nutrition,
         }
       },
       { status: 200 }
@@ -56,3 +127,8 @@ export async function POST(req: Request) {
     );
   }
 }
+
+// Configure to handle larger payloads
+export const maxDuration = 60; // Optional: Set max execution time (in seconds)
+export const dynamic = 'force-dynamic'; // Ensures the route runs dynamically
+export const runtime = 'nodejs'; // Ensures compatibility with Node.js environment

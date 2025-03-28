@@ -137,7 +137,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         login,
         register,
         logout,
-        updateUserAfterOnboarding, // Add the new function to context
         isAuthenticated: !!user,
     };
 

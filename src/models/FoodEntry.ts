@@ -1,3 +1,4 @@
+// src/models/FoodEntry.ts
 import mongoose, { Schema, Model } from 'mongoose';
 
 export interface IFoodEntry {
@@ -16,41 +17,41 @@ export interface IFoodEntry {
 
 const FoodEntrySchema = new Schema<IFoodEntry>(
   {
-    userId: { 
-      type: String, 
+    userId: {
+      type: String,
       required: true,
       ref: 'User'
     },
-    foodName: { 
-      type: String, 
-      required: true 
+    foodName: {
+      type: String,
+      required: true
     },
-    calories: { 
-      type: Number, 
-      required: true 
+    calories: {
+      type: Number,
+      required: true
     },
-    proteins: { 
-      type: Number, 
-      required: true 
+    proteins: {
+      type: Number,
+      required: true
     },
-    carbs: { 
-      type: Number, 
-      required: true 
+    carbs: {
+      type: Number,
+      required: true
     },
-    fats: { 
-      type: Number, 
-      required: true 
+    fats: {
+      type: Number,
+      required: true
     },
-    imageUrl: { 
+    imageUrl: {
       type: String
     },
-    timestamp: { 
-      type: Date, 
-      default: Date.now 
+    timestamp: {
+      type: Date,
+      default: Date.now
     },
   },
-  { 
-    timestamps: true 
+  {
+    timestamps: true
   }
 );
 

@@ -1,16 +1,18 @@
-// src/components/layout/Sidebar.tsx
 'use client';
 
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/components/Providers/AuthProvider'; // Make sure this path is correct
 
-interface SidebarProps {
-    userId: string;
-}
-
-const Sidebar: React.FC<SidebarProps> = ({ userId }) => {
+const Sidebar: React.FC = () => {
     const pathname = usePathname();
+    const { user, isAuthenticated } = useAuth();
+
+    // If not authenticated, don't render the sidebar
+    if (!isAuthenticated) {
+        return null;
+    }
 
     const isActive = (path: string) => {
         return pathname === path;

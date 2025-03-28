@@ -1,28 +1,37 @@
-// src/app/profile/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { calculateBMI, getBMICategory } from '@/lib/bmi';
 
-export default function Profile() {
-    // For demo purposes, we'll use a temporary user ID
-    // In a real app, this would come from authentication
-    const [userId, setUserId] = useState<string>('demo-user-123');
+interface UserProfile {
+    id: string;
+    name: string;
+    email: string;
+    height: number;
+    weight: number;
+    bmi: number;
+    goalType: 'weight_loss' | 'weight_gain' | 'maintain';
+    dietaryPreference?: 'vegetarian' | 'non-vegetarian' | 'vegan';
+    allergies?: string[];
+    activityLevel?: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
+    age?: number;
+    gender?: 'male' | 'female' | 'other';
+}
 
-    const [userData, setUserData] = useState({
-        name: 'Demo User',
-        email: 'demo@example.com',
-        height: 175, // cm
-        weight: 70, // kg
-        bmi: 22.9,
-        goalType: 'maintain' as 'weight_loss' | 'weight_gain' | 'maintain',
-    });
-
+export default function ProfilePage() {
+    const router = useRouter();
+    const [userData, setUserData] = useState<UserProfile | null>(null);
     const [formData, setFormData] = useState({
         name: '',
         email: '',
         height: '',
         weight: '',
+        age: '',
+        gender: '',
+        dietaryPreference: '',
+        activityLevel: '',
+        allergies: [] as string[]
     });
 
     const [loading, setLoading] = useState(true);
@@ -30,45 +39,79 @@ export default function Profile() {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
 
+    // Fetch user profile data
     useEffect(() => {
-        // Simulate fetching user data
-        const fetchUserData = async () => {
+        const fetchUserProfile = async () => {
             try {
                 setLoading(true);
 
-                // In a real app, fetch from your API
-                // const response = await fetch(`/api/users/${userId}`);
-                // const data = await response.json();
-                // if (data.success) setUserData(data.data);
+                const response = await fetch('/api/users/me');
 
-                // For demo, we'll just use the default data with a delay
-                setTimeout(() => {
-                    setFormData({
-                        name: userData.name,
-                        email: userData.email,
-                        height: String(userData.height),
-                        weight: String(userData.weight),
-                    });
-                    setLoading(false);
-                }, 1000);
+                if (!response.ok) {
+                    // If not authenticated, redirect to login
+                    if (response.status === 401) {
+                        router.push('/auth/login');
+                        return;
+                    }
+                    throw new Error(`Failed to fetch profile: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to fetch profile');
+                }
+
+                // Set the user data state
+                setUserData(data.data);
+
+                // Initialize the form data with user's current values
+                setFormData({
+                    name: data.data.name || '',
+                    email: data.data.email || '',
+                    height: data.data.height ? String(data.data.height) : '',
+                    weight: data.data.weight ? String(data.data.weight) : '',
+                    age: data.data.age ? String(data.data.age) : '',
+                    gender: data.data.gender || '',
+                    dietaryPreference: data.data.dietaryPreference || '',
+                    activityLevel: data.data.activityLevel || '',
+                    allergies: data.data.allergies || []
+                });
             } catch (err) {
-                console.error("Error fetching user data:", err);
-                setError("Failed to load user data");
+                console.error("Error fetching user profile:", err);
+                setError("Failed to load your profile");
+            } finally {
                 setLoading(false);
             }
         };
 
-        if (userId) {
-            fetchUserData();
-        }
-    }, [userId]);
+        fetchUserProfile();
+    }, [router]);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
             [name]: value
         }));
+    };
+
+    const handleAllergyChange = (allergy: string) => {
+        setFormData(prev => {
+            const allergies = [...prev.allergies];
+
+            if (allergies.includes(allergy)) {
+                return {
+                    ...prev,
+                    allergies: allergies.filter(a => a !== allergy)
+                };
+            } else {
+                return {
+                    ...prev,
+                    allergies: [...allergies, allergy]
+                };
+            }
+        });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -81,6 +124,7 @@ export default function Profile() {
             // Validate inputs
             const height = parseFloat(formData.height);
             const weight = parseFloat(formData.weight);
+            const age = formData.age ? parseInt(formData.age) : undefined;
 
             if (!formData.name || !formData.email) {
                 throw new Error('Name and email are required');
@@ -88,6 +132,10 @@ export default function Profile() {
 
             if (isNaN(height) || isNaN(weight) || height <= 0 || weight <= 0) {
                 throw new Error('Please enter valid height and weight values');
+            }
+
+            if (age !== undefined && (isNaN(age) || age <= 0)) {
+                throw new Error('Please enter a valid age');
             }
 
             // Calculate BMI
@@ -101,38 +149,44 @@ export default function Profile() {
                 goalType = 'weight_loss';
             }
 
-            // In a real app, save to your API
-            // const response = await fetch(`/api/users/${userId}`, {
-            //   method: 'PATCH',
-            //   headers: {
-            //     'Content-Type': 'application/json',
-            //   },
-            //   body: JSON.stringify({
-            //     name: formData.name,
-            //     email: formData.email,
-            //     height,
-            //     weight,
-            //   }),
-            // });
-            // 
-            // const data = await response.json();
-            // if (!data.success) throw new Error(data.error || 'Failed to update profile');
-
-            // For demo, simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            // Update local state
-            setUserData({
-                ...userData,
+            // Prepare the data for API
+            const updateData = {
                 name: formData.name,
                 email: formData.email,
                 height,
                 weight,
-                bmi,
-                goalType,
+                age,
+                gender: formData.gender || undefined,
+                dietaryPreference: formData.dietaryPreference || undefined,
+                activityLevel: formData.activityLevel || undefined,
+                allergies: formData.allergies
+            };
+
+            // Update the user profile
+            const response = await fetch('/api/users/me', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(updateData),
             });
 
+            if (!response.ok) {
+                throw new Error(`Failed to update profile: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.error || 'Failed to update profile');
+            }
+
+            // Update local user data state
+            setUserData(data.data);
             setSuccess(true);
+
+            // Scroll to top to show success message
+            window.scrollTo(0, 0);
         } catch (err) {
             console.error('Error updating profile:', err);
             setError(err instanceof Error ? err.message : 'An error occurred');
@@ -173,7 +227,7 @@ export default function Profile() {
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <h1 className="text-3xl font-bold text-gray-900 mb-8">Profile</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-8">Your Profile</h1>
 
             <div className="bg-white shadow-md rounded-lg max-w-3xl mx-auto">
                 <div className="md:grid md:grid-cols-3 md:gap-6 p-6">
@@ -183,7 +237,7 @@ export default function Profile() {
                             Update your personal information and health metrics.
                         </p>
 
-                        {userData.bmi && (
+                        {userData?.bmi && (
                             <div className="mt-6 border-t border-gray-200 pt-4">
                                 <h4 className="text-sm font-medium text-gray-500">Current BMI</h4>
                                 <p className="mt-1 text-lg font-semibold text-gray-900">
@@ -198,13 +252,22 @@ export default function Profile() {
                                 </p>
 
                                 <div className="mt-4">
-                                    <h4 className="text-sm font-medium text-gray-500">Recommended Goal</h4>
+                                    <h4 className="text-sm font-medium text-gray-500">Current Goal</h4>
                                     <p className="mt-1 text-sm font-medium text-indigo-600">
                                         {userData.goalType === 'weight_loss' && 'Weight Loss'}
                                         {userData.goalType === 'weight_gain' && 'Weight Gain'}
                                         {userData.goalType === 'maintain' && 'Maintain Weight'}
                                     </p>
                                 </div>
+
+                                {userData.dietaryPreference && (
+                                    <div className="mt-4">
+                                        <h4 className="text-sm font-medium text-gray-500">Dietary Preference</h4>
+                                        <p className="mt-1 text-sm font-medium text-indigo-600 capitalize">
+                                            {userData.dietaryPreference}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
@@ -286,6 +349,97 @@ export default function Profile() {
                                         min="1"
                                         required
                                     />
+                                </div>
+
+                                <div className="col-span-6 sm:col-span-3">
+                                    <label htmlFor="age" className="block text-sm font-medium text-gray-700">
+                                        Age
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="age"
+                                        id="age"
+                                        value={formData.age}
+                                        onChange={handleInputChange}
+                                        className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                                        min="1"
+                                    />
+                                </div>
+
+                                <div className="col-span-6 sm:col-span-3">
+                                    <label htmlFor="gender" className="block text-sm font-medium text-gray-700">
+                                        Gender
+                                    </label>
+                                    <select
+                                        id="gender"
+                                        name="gender"
+                                        value={formData.gender}
+                                        onChange={handleInputChange}
+                                        className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                    >
+                                        <option value="">Select gender</option>
+                                        <option value="male">Male</option>
+                                        <option value="female">Female</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+
+                                <div className="col-span-6 sm:col-span-3">
+                                    <label htmlFor="dietaryPreference" className="block text-sm font-medium text-gray-700">
+                                        Dietary Preference
+                                    </label>
+                                    <select
+                                        id="dietaryPreference"
+                                        name="dietaryPreference"
+                                        value={formData.dietaryPreference}
+                                        onChange={handleInputChange}
+                                        className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                    >
+                                        <option value="">Select preference</option>
+                                        <option value="vegetarian">Vegetarian</option>
+                                        <option value="non-vegetarian">Non-Vegetarian</option>
+                                        <option value="vegan">Vegan</option>
+                                    </select>
+                                </div>
+
+                                <div className="col-span-6 sm:col-span-3">
+                                    <label htmlFor="activityLevel" className="block text-sm font-medium text-gray-700">
+                                        Activity Level
+                                    </label>
+                                    <select
+                                        id="activityLevel"
+                                        name="activityLevel"
+                                        value={formData.activityLevel}
+                                        onChange={handleInputChange}
+                                        className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                    >
+                                        <option value="">Select activity level</option>
+                                        <option value="sedentary">Sedentary (little to no exercise)</option>
+                                        <option value="light">Light (exercise 1-3 days/week)</option>
+                                        <option value="moderate">Moderate (exercise 3-5 days/week)</option>
+                                        <option value="active">Active (exercise 6-7 days/week)</option>
+                                        <option value="very_active">Very Active (intense exercise daily)</option>
+                                    </select>
+                                </div>
+
+                                <div className="col-span-6">
+                                    <label className="block text-sm font-medium text-gray-700">Allergies</label>
+                                    <div className="mt-2 grid grid-cols-2 gap-2">
+                                        {['Dairy', 'Nuts', 'Gluten', 'Shellfish', 'Eggs', 'Soy'].map((allergy) => (
+                                            <div key={allergy} className="flex items-center">
+                                                <input
+                                                    type="checkbox"
+                                                    id={`allergy-${allergy}`}
+                                                    checked={formData.allergies.includes(allergy)}
+                                                    onChange={() => handleAllergyChange(allergy)}
+                                                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                                                />
+                                                <label htmlFor={`allergy-${allergy}`} className="ml-2 text-sm text-gray-700">
+                                                    {allergy}
+                                                </label>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
 

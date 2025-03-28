@@ -1,55 +1,45 @@
+// src/lib/mongodb.ts
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/nutrition-tracker';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/nutritrack';
 
-// Define our cached mongoose connection type
+if (!MONGODB_URI) {
+  throw new Error('Please define the MONGODB_URI environment variable');
+}
+
+// Define the type for our cached connection
 interface MongooseCache {
   conn: typeof mongoose | null;
   promise: Promise<typeof mongoose> | null;
 }
 
-// Add the type to the global namespace
+// Declare the global type for the mongoose cache
 declare global {
   var mongoose: MongooseCache | undefined;
 }
 
-// Global variable to cache the connection
-let cached: MongooseCache = global.mongoose || { conn: null, promise: null };
+// Initialize the cached connection
+const cached: MongooseCache = global.mongoose || { conn: null, promise: null };
 
-// Initialize the global mongoose cache if it doesn't exist
+// Update the global object
 if (!global.mongoose) {
   global.mongoose = cached;
 }
 
-async function connectToDatabase() {
+export async function connectToDatabase() {
   if (cached.conn) {
     return cached.conn;
   }
 
   if (!cached.promise) {
-    const opts = {
+    cached.promise = mongoose.connect(MONGODB_URI, {
       bufferCommands: false,
-    };
-
-    cached.promise = mongoose.connect(MONGODB_URI, opts)
-      .then((mongoose) => {
-        console.log('Connected to MongoDB');
-        return mongoose;
-      })
-      .catch((error) => {
-        console.error('Error connecting to MongoDB:', error);
-        throw error;
-      });
+    });
   }
-
-  try {
-    cached.conn = await cached.promise;
-  } catch (e) {
-    cached.promise = null;
-    throw e;
-  }
-
+  cached.conn = await cached.promise;
   return cached.conn;
 }
 
-export default connectToDatabase;
+
+// Also add a default export for backward compatibility
+export default { connectToDatabase };

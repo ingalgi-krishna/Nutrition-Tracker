@@ -1,396 +1,507 @@
-// src/components/food/FoodEntryForm.tsx
+// src/components/dashboard/FoodEntryForm.tsx
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useAuth } from '@/components/Providers/AuthProvider';
+import { Loader2, Upload, Camera, X, Plus } from 'lucide-react';
 
 interface FoodEntryFormProps {
-    userId: string;
-    onSuccess?: () => void;
+    onSuccess: () => void;
 }
 
-const FoodEntryForm: React.FC<FoodEntryFormProps> = ({ userId, onSuccess }) => {
+type InputMethod = 'manual' | 'image' | 'camera';
+
+export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
+    const { user } = useAuth();
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState(false);
-    const [image, setImage] = useState<File | null>(null);
+    const [analyzing, setAnalyzing] = useState(false);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
+    const [inputMethod, setInputMethod] = useState<InputMethod>('manual');
     const [imagePreview, setImagePreview] = useState<string | null>(null);
-    const [manualEntry, setManualEntry] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+
     const [formData, setFormData] = useState({
         foodName: '',
         calories: '',
         proteins: '',
         carbs: '',
         fats: '',
+        timestamp: new Date().toISOString().slice(0, 16),
     });
 
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            setImage(file);
+    // Clean up camera stream when component unmounts
+    useEffect(() => {
+        return () => {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+            }
+        };
+    }, [cameraStream]);
 
-            // Create a preview
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setImagePreview(reader.result as string);
-            };
-            reader.readAsDataURL(file);
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setFormData((prev) => ({ ...prev, [name]: value }));
+    };
 
-            // Reset manual entry form when an image is selected
-            setManualEntry(false);
+    const handleInputMethodChange = (method: InputMethod) => {
+        // Stop camera if active and switching away
+        if (inputMethod === 'camera' && method !== 'camera' && cameraStream) {
+            cameraStream.getTracks().forEach(track => track.stop());
+            setCameraStream(null);
+        }
+
+        setInputMethod(method);
+        setImagePreview(null);
+
+        if (method === 'camera') {
+            startCamera();
+        }
+    };
+
+    const startCamera = async () => {
+        try {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                setCameraStream(stream);
+
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                }
+            } else {
+                throw new Error('Camera not supported in this browser');
+            }
+        } catch (err) {
+            console.error('Error accessing camera:', err);
+            setError('Could not access camera. Please check permissions and try again.');
+            setInputMethod('manual');
+        }
+    };
+
+    const captureImage = () => {
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+
+        if (!video || !canvas) return;
+
+        const context = canvas.getContext('2d');
+        if (!context) return;
+
+        // Set canvas dimensions to match video
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        // Draw the current video frame on canvas
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Convert canvas to data URL and set as preview
+        const dataUrl = canvas.toDataURL('image/jpeg');
+        setImagePreview(dataUrl);
+
+        // Stop camera stream
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(track => track.stop());
+            setCameraStream(null);
+        }
+
+        // Analyze the captured image
+        analyzeImage(dataUrl);
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            if (event.target?.result) {
+                const dataUrl = event.target.result as string;
+                setImagePreview(dataUrl);
+                analyzeImage(dataUrl);
+            }
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleFileDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const file = e.dataTransfer.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            if (event.target?.result) {
+                const dataUrl = event.target.result as string;
+                setImagePreview(dataUrl);
+                analyzeImage(dataUrl);
+            }
+        };
+        reader.readAsDataURL(file);
+    };
+    // In src/components/dashboard/FoodEntryForm.tsx
+    // Replace the existing analyzeImage function with this one
+
+    const analyzeImage = async (imageData: string) => {
+        setAnalyzing(true);
+        setError('');
+
+        try {
+            // Call your Gemini-powered API to analyze the image
+            const response = await fetch('/api/analyze-food', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    image: imageData,
+                    userId: user?.id
+                }),
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Fill form with analyzed data
+                setFormData(prev => ({
+                    ...prev,
+                    foodName: result.data.foodName || '',
+                    calories: result.data.calories?.toString() || '',
+                    proteins: result.data.proteins?.toString() || '',
+                    carbs: result.data.carbs?.toString() || '',
+                    fats: result.data.fats?.toString() || '',
+                }));
+            } else {
+                // If analysis fails, keep the image but show error
+                setError(result.error || 'Could not analyze the image. Please fill the details manually.');
+            }
+        } catch (err) {
+            console.error('Error analyzing image:', err);
+            setError('Error analyzing the image. Please fill the details manually.');
+        } finally {
+            setAnalyzing(false);
+        }
+    };
+
+    const handleImageCancel = () => {
+        setImagePreview(null);
+
+        // Reset form if in image mode to encourage reupload
+        if (inputMethod !== 'manual') {
             setFormData({
                 foodName: '',
                 calories: '',
                 proteins: '',
                 carbs: '',
                 fats: '',
+                timestamp: new Date().toISOString().slice(0, 16),
             });
-        }
-    };
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-
-    const handleManualToggle = () => {
-        setManualEntry(prev => !prev);
-        if (!manualEntry) {
-            setImage(null);
-            setImagePreview(null);
         }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        setError(null);
-        setSuccess(false);
+        setError('');
+        setSuccess('');
+
+        if (!user?.id) {
+            setError('You must be logged in to add food entries');
+            setLoading(false);
+            return;
+        }
 
         try {
-            if (image) {
-                // Handle image upload and analysis
-                const reader = new FileReader();
-                reader.readAsDataURL(image);
-                reader.onloadend = async () => {
-                    const base64data = reader.result;
+            // Prepare form data
+            const entryData = {
+                userId: user.id,
+                foodName: formData.foodName,
+                calories: parseFloat(formData.calories) || 0,
+                proteins: parseFloat(formData.proteins) || 0,
+                carbs: parseFloat(formData.carbs) || 0,
+                fats: parseFloat(formData.fats) || 0,
+                timestamp: new Date(formData.timestamp),
+                imageUrl: imagePreview, // Include the image
+            };
 
-                    // Send image to server for analysis
-                    const response = await fetch('/api/upload-image', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            imageBase64: base64data,
-                            userId,
-                        }),
-                    });
+            // Submit the food entry
+            const response = await fetch('/api/food-entries', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(entryData),
+            });
 
-                    if (!response.ok) {
-                        throw new Error('Failed to analyze food image');
-                    }
+            const result = await response.json();
 
-                    const data = await response.json();
-
-                    if (!data.success) {
-                        throw new Error(data.error || 'Failed to analyze food image');
-                    }
-
-                    // Create food entry with the analyzed data
-                    const { foodName, nutrition } = data.data;
-
-                    const entryResponse = await fetch('/api/food-entries', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            userId,
-                            foodName,
-                            calories: nutrition.calories,
-                            proteins: nutrition.proteins,
-                            carbs: nutrition.carbs,
-                            fats: nutrition.fats,
-                            imageUrl: imagePreview, // In a real app, you'd use a proper URL
-                            timestamp: new Date(),
-                        }),
-                    });
-
-                    if (!entryResponse.ok) {
-                        throw new Error('Failed to save food entry');
-                    }
-
-                    const entryData = await entryResponse.json();
-
-                    if (!entryData.success) {
-                        throw new Error(entryData.error || 'Failed to save food entry');
-                    }
-
-                    setSuccess(true);
-
-                    // Reset form
-                    setImage(null);
-                    setImagePreview(null);
-
-                    // Call success callback if provided
-                    if (onSuccess) {
-                        onSuccess();
-                    }
-
-                    setLoading(false);
-                };
-            } else if (manualEntry) {
-                // Handle manual entry
-                const { foodName, calories, proteins, carbs, fats } = formData;
-
-                if (!foodName || !calories || !proteins || !carbs || !fats) {
-                    throw new Error('Please fill in all fields');
-                }
-
-                const response = await fetch('/api/food-entries', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        userId,
-                        foodName,
-                        calories: parseInt(calories),
-                        proteins: parseInt(proteins),
-                        carbs: parseInt(carbs),
-                        fats: parseInt(fats),
-                        timestamp: new Date(),
-                    }),
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to save food entry');
-                }
-
-                const data = await response.json();
-
-                if (!data.success) {
-                    throw new Error(data.error || 'Failed to save food entry');
-                }
-
-                setSuccess(true);
-
-                // Reset form
+            if (result.success) {
+                setSuccess('Food entry added successfully!');
                 setFormData({
                     foodName: '',
                     calories: '',
                     proteins: '',
                     carbs: '',
                     fats: '',
+                    timestamp: new Date().toISOString().slice(0, 16),
                 });
-
-                // Call success callback if provided
-                if (onSuccess) {
-                    onSuccess();
-                }
+                setImagePreview(null);
+                onSuccess();
             } else {
-                throw new Error('Please select an image or use manual entry');
+                setError(result.error || 'Failed to add food entry');
             }
         } catch (err) {
-            console.error('Error submitting food entry:', err);
-            setError(err instanceof Error ? err.message : 'An error occurred');
+            setError('An error occurred. Please try again.');
+            console.error(err);
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-4">Add Food Entry</h2>
-
-            <div className="mb-4">
-                <div className="flex justify-between items-center">
-                    <button
-                        type="button"
-                        onClick={handleManualToggle}
-                        className={`px-4 py-2 rounded-lg ${!manualEntry ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'
-                            }`}
-                    >
-                        Scan Food
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={handleManualToggle}
-                        className={`px-4 py-2 rounded-lg ${manualEntry ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'
-                            }`}
-                    >
-                        Manual Entry
-                    </button>
-                </div>
-            </div>
+        <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">Add Food Entry</h2>
 
             {error && (
-                <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md text-sm">
                     {error}
                 </div>
             )}
 
             {success && (
-                <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
-                    Food entry saved successfully!
+                <div className="mb-4 p-3 bg-green-50 text-green-700 rounded-md text-sm">
+                    {success}
                 </div>
             )}
 
-            <form onSubmit={handleSubmit}>
-                {!manualEntry && (
-                    <div className="mb-4">
-                        <label className="block text-gray-700 text-sm font-bold mb-2">
-                            Food Image
-                        </label>
-
-                        {imagePreview ? (
-                            <div className="mb-3">
-                                <img
-                                    src={imagePreview}
-                                    alt="Food preview"
-                                    className="w-full max-h-48 object-contain rounded"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setImage(null);
-                                        setImagePreview(null);
-                                    }}
-                                    className="mt-2 text-sm text-red-600"
-                                >
-                                    Remove image
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6">
-                                <label className="w-full flex flex-col items-center cursor-pointer">
-                                    <svg
-                                        className="w-8 h-8 text-gray-400"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth="2"
-                                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                        ></path>
-                                    </svg>
-                                    <span className="mt-2 text-sm text-gray-500">
-                                        Take a photo or upload an image
-                                    </span>
-                                    <input
-                                        type="file"
-                                        className="hidden"
-                                        accept="image/*"
-                                        onChange={handleImageChange}
-                                        disabled={loading}
-                                    />
-                                </label>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {manualEntry && (
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-gray-700 text-sm font-bold mb-2">
-                                Food Name
-                            </label>
-                            <input
-                                type="text"
-                                name="foodName"
-                                value={formData.foodName}
-                                onChange={handleInputChange}
-                                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                disabled={loading}
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-gray-700 text-sm font-bold mb-2">
-                                Calories
-                            </label>
-                            <input
-                                type="number"
-                                name="calories"
-                                value={formData.calories}
-                                onChange={handleInputChange}
-                                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                disabled={loading}
-                                required
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-4">
-                            <div>
-                                <label className="block text-gray-700 text-sm font-bold mb-2">
-                                    Proteins (g)
-                                </label>
-                                <input
-                                    type="number"
-                                    name="proteins"
-                                    value={formData.proteins}
-                                    onChange={handleInputChange}
-                                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                    disabled={loading}
-                                    required
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-gray-700 text-sm font-bold mb-2">
-                                    Carbs (g)
-                                </label>
-                                <input
-                                    type="number"
-                                    name="carbs"
-                                    value={formData.carbs}
-                                    onChange={handleInputChange}
-                                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                    disabled={loading}
-                                    required
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-gray-700 text-sm font-bold mb-2">
-                                    Fats (g)
-                                </label>
-                                <input
-                                    type="number"
-                                    name="fats"
-                                    value={formData.fats}
-                                    onChange={handleInputChange}
-                                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                    disabled={loading}
-                                    required
-                                />
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                <div className="mt-6">
+            {/* Input method selector */}
+            <div className="mb-6">
+                <div className="flex border border-gray-300 rounded-md overflow-hidden">
                     <button
-                        type="submit"
-                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                        disabled={loading}
+                        type="button"
+                        onClick={() => handleInputMethodChange('manual')}
+                        className={`flex-1 py-2 px-4 text-sm font-medium ${inputMethod === 'manual'
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                            }`}
                     >
-                        {loading ? 'Processing...' : 'Save Food Entry'}
+                        Manual Entry
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => handleInputMethodChange('image')}
+                        className={`flex-1 py-2 px-4 text-sm font-medium ${inputMethod === 'image'
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                            }`}
+                    >
+                        Upload Image
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => handleInputMethodChange('camera')}
+                        className={`flex-1 py-2 px-4 text-sm font-medium ${inputMethod === 'camera'
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                            }`}
+                    >
+                        Camera
                     </button>
                 </div>
+            </div>
+
+            {/* Image upload area */}
+            {inputMethod === 'image' && !imagePreview && (
+                <div
+                    className="mb-6 border-2 border-dashed border-gray-300 rounded-md p-6 text-center cursor-pointer hover:border-indigo-500 transition-colors"
+                    onClick={() => fileInputRef.current?.click()}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={handleFileDrop}
+                >
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                        accept="image/*"
+                        className="hidden"
+                    />
+                    <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                    <p className="mt-2 text-sm text-gray-600">
+                        Click to upload or drag and drop
+                    </p>
+                    <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+                </div>
+            )}
+
+            {/* Camera view */}
+            {inputMethod === 'camera' && !imagePreview && (
+                <div className="mb-6 border border-gray-300 rounded-md overflow-hidden">
+                    <div className="relative bg-black aspect-video">
+                        <video
+                            ref={videoRef}
+                            autoPlay
+                            playsInline
+                            className="w-full h-full object-cover"
+                        />
+                        <button
+                            type="button"
+                            onClick={captureImage}
+                            className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white rounded-full p-3 shadow-lg"
+                        >
+                            <Camera className="h-6 w-6 text-indigo-600" />
+                        </button>
+                    </div>
+                    <canvas ref={canvasRef} className="hidden" />
+                </div>
+            )}
+
+            {/* Image preview */}
+            {imagePreview && (
+                <div className="mb-6 relative">
+                    <img
+                        src={imagePreview}
+                        alt="Food preview"
+                        className="w-full h-auto rounded-md max-h-60 object-cover"
+                    />
+                    <button
+                        type="button"
+                        onClick={handleImageCancel}
+                        className="absolute top-2 right-2 bg-white rounded-full p-1 shadow-md"
+                    >
+                        <X className="h-5 w-5 text-gray-600" />
+                    </button>
+
+                    {analyzing && (
+                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-md">
+                            <div className="text-center text-white">
+                                <Loader2 className="animate-spin h-8 w-8 mx-auto mb-2" />
+                                <p className="text-sm">Analyzing food...</p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                    <label htmlFor="foodName" className="block text-sm font-medium text-gray-700">
+                        Food Name
+                    </label>
+                    <input
+                        type="text"
+                        id="foodName"
+                        name="foodName"
+                        value={formData.foodName}
+                        onChange={handleChange}
+                        required
+                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label htmlFor="calories" className="block text-sm font-medium text-gray-700">
+                            Calories
+                        </label>
+                        <input
+                            type="number"
+                            id="calories"
+                            name="calories"
+                            value={formData.calories}
+                            onChange={handleChange}
+                            required
+                            min="0"
+                            step="0.1"
+                            className="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label htmlFor="proteins" className="block text-sm font-medium text-gray-700">
+                            Proteins (g)
+                        </label>
+                        <input
+                            type="number"
+                            id="proteins"
+                            name="proteins"
+                            value={formData.proteins}
+                            onChange={handleChange}
+                            required
+                            min="0"
+                            step="0.1"
+                            className="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label htmlFor="carbs" className="block text-sm font-medium text-gray-700">
+                            Carbs (g)
+                        </label>
+                        <input
+                            type="number"
+                            id="carbs"
+                            name="carbs"
+                            value={formData.carbs}
+                            onChange={handleChange}
+                            required
+                            min="0"
+                            step="0.1"
+                            className="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        />
+                    </div>
+
+                    <div>
+                        <label htmlFor="fats" className="block text-sm font-medium text-gray-700">
+                            Fats (g)
+                        </label>
+                        <input
+                            type="number"
+                            id="fats"
+                            name="fats"
+                            value={formData.fats}
+                            onChange={handleChange}
+                            required
+                            min="0"
+                            step="0.1"
+                            className="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        />
+                    </div>
+                </div>
+
+                <div>
+                    <label htmlFor="timestamp" className="block text-sm font-medium text-gray-700">
+                        Date & Time
+                    </label>
+                    <input
+                        type="datetime-local"
+                        id="timestamp"
+                        name="timestamp"
+                        value={formData.timestamp}
+                        onChange={handleChange}
+                        required
+                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                </div>
+
+                <button
+                    type="submit"
+                    disabled={loading || analyzing}
+                    className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                >
+                    {loading ? (
+                        <>
+                            <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5" />
+                            Saving...
+                        </>
+                    ) : (
+                        'Add Food Entry'
+                    )}
+                </button>
             </form>
         </div>
     );
-};
-
-export default FoodEntryForm;
+}

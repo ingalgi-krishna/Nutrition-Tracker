@@ -2,6 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Font imports */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap');
+
+/* Custom font face declarations (optional, but can help with loading) */
+@font-face {
+  font-family: 'Noto Sans';
+  src: url('https://fonts.gstatic.com/s/notosans/v30/o-0IIpQlx3QUlC5A4PNr4OARDW_0.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Montserrat';
+  src: url('https://fonts.gstatic.com/s/montserrat/v25/JTUSjIg69CK48gW7PXoo9WlhyzM.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+}
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 246, 248, 250;
@@ -18,35 +36,70 @@
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))) rgb(var(--background-start-rgb));
+  /* Explicitly set font family */
+  font-family: 'Montserrat', sans-serif;
+  background-color: white;
+  color: black;
 }
 
-/* Custom utility classes */
-@layer components {
-  .btn-primary {
-    @apply bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded;
-  }
-
-  .btn-secondary {
-    @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded;
-  }
-
-  .card {
-    @apply bg-white rounded-lg shadow-md p-6;
-  }
-
-  .input-field {
-    @apply shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline;
-  }
-
-  .form-label {
-    @apply block text-gray-700 text-sm font-bold mb-2;
-  }
+/* Headings in Noto Sans */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Noto Sans', sans-serif;
 }
 
-/* Add specific styles to ensure compatibility */
+/* Ensure input text is visible */
+input,
+textarea,
+select {
+  color: black !important;
+  font-family: 'Montserrat', sans-serif;
+}
+
+/* Custom classes using current Tailwind utilities */
+.btn-primary {
+  @apply bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.btn-secondary {
+  @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.card {
+  @apply bg-white rounded-lg shadow-md p-6;
+}
+
+.input-field {
+  @apply appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.form-label {
+  @apply block text-gray-700 text-sm font-bold mb-2;
+  font-family: 'Montserrat', sans-serif;
+}
+
+/* Title class using Noto Sans */
+.title {
+  font-family: 'Noto Sans', sans-serif;
+}
+
+/* Utility classes to force font families */
+.font-noto {
+  font-family: 'Noto Sans', sans-serif;
+}
+
+.font-montserrat {
+  font-family: 'Montserrat', sans-serif;
+}
+
+/* Ensure text visibility across different elements */
 h1,
 h2,
 h3,
@@ -60,31 +113,7 @@ button,
 input,
 textarea,
 select {
+  color: black;
   margin: 0;
   padding: 0;
-}
-
-/* Make sure fonts load correctly */
-@font-face {
-  font-family: 'Inter';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('/fonts/Inter-Regular.ttf') format('ttf');
-}
-
-@font-face {
-  font-family: 'Inter';
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url('/fonts/Inter-Medium.ttf') format('ttf');
-}
-
-@font-face {
-  font-family: 'Inter';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('/fonts/Inter-Bold.woff2') format('woff2');
 }

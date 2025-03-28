@@ -1,17 +1,15 @@
-// src/components/layout/Header.tsx
 'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useAuth } from '@/components/Providers/AuthProvider'; // Update the import path
 
-interface HeaderProps {
-    userId?: string;
-}
-
-const Header: React.FC<HeaderProps> = ({ userId }) => {
+const Header: React.FC = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const pathname = usePathname();
+    const router = useRouter();
+    const { user, logout, isAuthenticated } = useAuth(); // Use the correct properties from AuthContext
 
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
@@ -23,6 +21,12 @@ const Header: React.FC<HeaderProps> = ({ userId }) => {
 
     const isActive = (path: string) => {
         return pathname === path;
+    };
+
+    const handleLogout = () => {
+        logout();
+        router.push('/auth/login');
+        closeMenu();
     };
 
     return (
@@ -49,7 +53,7 @@ const Header: React.FC<HeaderProps> = ({ userId }) => {
                             Home
                         </Link>
 
-                        {userId && (
+                        {isAuthenticated ? (
                             <>
                                 <Link
                                     href="/dashboard"
@@ -89,6 +93,34 @@ const Header: React.FC<HeaderProps> = ({ userId }) => {
                                         } text-sm font-medium`}
                                 >
                                     Profile
+                                </Link>
+
+                                <button
+                                    onClick={handleLogout}
+                                    className="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 text-sm font-medium"
+                                >
+                                    Logout
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <Link
+                                    href="/auth/login"
+                                    className={`inline-flex items-center px-1 pt-1 border-b-2 ${isActive('/auth/login')
+                                        ? 'border-indigo-500 text-gray-900'
+                                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                                        } text-sm font-medium`}
+                                >
+                                    Login
+                                </Link>
+                                <Link
+                                    href="/auth/register"
+                                    className={`inline-flex items-center px-1 pt-1 border-b-2 ${isActive('/auth/register')
+                                        ? 'border-indigo-500 text-gray-900'
+                                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                                        } text-sm font-medium`}
+                                >
+                                    Register
                                 </Link>
                             </>
                         )}
@@ -145,7 +177,7 @@ const Header: React.FC<HeaderProps> = ({ userId }) => {
                             Home
                         </Link>
 
-                        {userId && (
+                        {isAuthenticated ? (
                             <>
                                 <Link
                                     href="/dashboard"
@@ -189,6 +221,36 @@ const Header: React.FC<HeaderProps> = ({ userId }) => {
                                     onClick={closeMenu}
                                 >
                                     Profile
+                                </Link>
+
+                                <button
+                                    onClick={handleLogout}
+                                    className="block w-full text-left px-3 py-2 rounded-md text-base font-medium border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700"
+                                >
+                                    Logout
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <Link
+                                    href="/auth/login"
+                                    className={`block px-3 py-2 rounded-md text-base font-medium ${isActive('/auth/login')
+                                        ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
+                                        : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                                        }`}
+                                    onClick={closeMenu}
+                                >
+                                    Login
+                                </Link>
+                                <Link
+                                    href="/auth/register"
+                                    className={`block px-3 py-2 rounded-md text-base font-medium ${isActive('/auth/register')
+                                        ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
+                                        : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+                                        }`}
+                                    onClick={closeMenu}
+                                >
+                                    Register
                                 </Link>
                             </>
                         )}

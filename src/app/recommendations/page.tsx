@@ -2,6 +2,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/components/Providers/AuthProvider';
+import { Loader2 } from 'lucide-react';
 
 interface Recommendation {
     foodName: string;
@@ -23,34 +25,40 @@ interface UserData {
     bmi: number;
     bmiCategory?: string;
     goalType: 'weight_loss' | 'weight_gain' | 'maintain';
+    dietaryPreference?: string;
 }
 
 interface NutritionData {
     proteins: number;
     carbs: number;
     fats: number;
-    calories?: number;
+    calories: number;
+}
+
+interface FoodEntry {
+    foodName: string;
+    mealTime: string;
+    calories: number;
+    proteins: number;
+    carbs: number;
+    fats: number;
+    timestamp: string;
 }
 
 export default function Recommendations() {
-    // For demo purposes, we'll use a temporary user ID
-    // In a real app, this would come from authentication
-    const [userId, setUserId] = useState<string>('demo-user-123');
-
-    const [userData, setUserData] = useState<UserData>({
-        bmi: 22.9,
-        goalType: 'maintain',
-    });
-
-    const [currentNutrition, setCurrentNutrition] = useState<NutritionData>({
-        proteins: 110,
-        carbs: 220,
-        fats: 70,
-    });
-
+    const { user } = useAuth();
+    const [userData, setUserData] = useState<UserData | null>(null);
+    const [currentNutrition, setCurrentNutrition] = useState<NutritionData | null>(null);
+    const [todaysFoodEntries, setTodaysFoodEntries] = useState<FoodEntry[]>([]);
     const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+    const handleRefresh = () => {
+        setRefreshTrigger(prev => prev + 1);
+        setLoading(true);
+    };
 
     useEffect(() => {
         // Fetch recommendations from API
@@ -58,10 +66,7 @@ export default function Recommendations() {
             try {
                 setLoading(true);
 
-                // Using a sample user ID for testing - use your actual ID in production
-                // For MongoDB, we're using a simple string ID for demo purposes
-                // In the API we'll handle string IDs appropriately
-                const response = await fetch(`/api/recommendations`);
+                const response = await fetch('/api/recommendations');
 
                 if (!response.ok) {
                     throw new Error(`API request failed with status: ${response.status}`);
@@ -76,8 +81,10 @@ export default function Recommendations() {
                         bmi: data.data.user.bmi,
                         bmiCategory: data.data.user.bmiCategory,
                         goalType: data.data.user.goalType,
+                        dietaryPreference: data.data.user.dietaryPreference
                     });
                     setCurrentNutrition(data.data.currentNutrition);
+                    setTodaysFoodEntries(data.data.todaysFoodEntries || []);
                     setRecommendations(data.data.recommendations);
                     setLoading(false);
                 } else {
@@ -87,60 +94,31 @@ export default function Recommendations() {
                 console.error("Error fetching recommendations:", err);
                 setError(err instanceof Error ? err.message : "Failed to load recommendations");
                 setLoading(false);
-
-                // For demo purposes, if the API fails, we'll show fallback recommendations
-                // In a real app, you might want to retry or show a more specific error
-                setRecommendations([
-                    {
-                        foodName: "Idli Sambar",
-                        reason: "Balanced meal with protein and complex carbs",
-                        nutrition: { proteins: 8, carbs: 30, fats: 5, calories: 230 },
-                        mealTime: "breakfast",
-                        isVegetarian: true,
-                        description: "Steamed rice cakes served with lentil soup"
-                    },
-                    {
-                        foodName: "Tandoori Chicken",
-                        reason: "High protein, low carb option for weight management",
-                        nutrition: { proteins: 25, carbs: 5, fats: 10, calories: 250 },
-                        mealTime: "dinner",
-                        isVegetarian: false,
-                        description: "Chicken marinated in yogurt and spices, then grilled"
-                    }
-                ]);
             }
         };
 
-        if (userId) {
+        if (user?.id) {
             fetchRecommendations();
         }
-    }, [userId]);
+    }, [user?.id, refreshTrigger]);
+
+    if (!user) {
+        return (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <div className="text-center">
+                    <h1 className="text-3xl font-bold text-gray-900 mb-4">Loading...</h1>
+                    <p className="text-gray-600">Please wait while we check your authentication status.</p>
+                </div>
+            </div>
+        );
+    }
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center h-screen bg-gray-50">
+            <div className="flex justify-center items-center min-h-[50vh] bg-gray-50">
                 <div className="text-center">
-                    <svg
-                        className="animate-spin h-10 w-10 text-indigo-600 mx-auto mb-4"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                    >
-                        <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                        ></circle>
-                        <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                    </svg>
-                    <p className="text-gray-600">Generating your Indian food recommendations...</p>
+                    <Loader2 className="animate-spin h-10 w-10 text-indigo-600 mx-auto mb-4" />
+                    <p className="text-gray-600">Generating your personalized food recommendations...</p>
                 </div>
             </div>
         );
@@ -154,30 +132,91 @@ export default function Recommendations() {
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">
-                Indian Food Recommendations
-            </h1>
+            <div className="flex justify-between items-center mb-6">
+                <h1 className="text-3xl font-bold text-gray-900">
+                    Food Recommendations
+                </h1>
+                <button
+                    onClick={handleRefresh}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                >
+                    Refresh Recommendations
+                </button>
+            </div>
 
             {error && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-8">
-                    <p className="text-yellow-700">
-                        Note: {error}. Showing sample recommendations instead.
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8">
+                    <p className="text-red-700">
+                        Error: {error}
                     </p>
                 </div>
             )}
 
-            <div className="bg-indigo-50 rounded-lg p-4 mb-8">
-                <p className="text-indigo-700">
-                    Based on your BMI of <span className="font-semibold">{userData.bmi.toFixed(1)}</span>
-                    {userData.bmiCategory && <span> ({userData.bmiCategory})</span>} and
-                    goal to <span className="font-semibold">
-                        {userData.goalType === 'weight_loss' ? 'lose weight' :
-                            userData.goalType === 'weight_gain' ? 'gain weight' :
-                                'maintain weight'}
-                    </span>,
-                    we've customized these recommendations for your nutrition needs.
-                </p>
-            </div>
+            {userData && (
+                <div className="bg-indigo-50 rounded-lg p-4 mb-8">
+                    <p className="text-indigo-700">
+                        Based on your BMI of <span className="font-semibold">{userData.bmi.toFixed(1)}</span>
+                        {userData.bmiCategory && <span> ({userData.bmiCategory})</span>},
+                        goal to <span className="font-semibold">
+                            {userData.goalType === 'weight_loss' ? 'lose weight' :
+                                userData.goalType === 'weight_gain' ? 'gain weight' :
+                                    'maintain weight'}
+                        </span>
+                        {userData.dietaryPreference && (
+                            <span> and {userData.dietaryPreference} dietary preference</span>
+                        )},
+                        we've customized these recommendations for your nutrition needs.
+                    </p>
+                </div>
+            )}
+
+            {/* Today's food log summary */}
+            {todaysFoodEntries.length > 0 && (
+                <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
+                    <div className="px-6 py-4 bg-gray-50 border-b">
+                        <h2 className="text-lg font-semibold text-gray-800">Today's Food Log Summary</h2>
+                    </div>
+                    <div className="p-6">
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead>
+                                    <tr>
+                                        <th className="px-4 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                                        <th className="px-4 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Food</th>
+                                        <th className="px-4 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Calories</th>
+                                        <th className="px-4 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Protein</th>
+                                        <th className="px-4 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Carbs</th>
+                                        <th className="px-4 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Fats</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-200 bg-white">
+                                    {todaysFoodEntries.map((entry, index) => (
+                                        <tr key={index}>
+                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{entry.timestamp}</td>
+                                            <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{entry.foodName}</td>
+                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 text-right">{entry.calories.toFixed(0)}</td>
+                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 text-right">{entry.proteins.toFixed(1)}g</td>
+                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 text-right">{entry.carbs.toFixed(1)}g</td>
+                                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 text-right">{entry.fats.toFixed(1)}g</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                                {currentNutrition && (
+                                    <tfoot>
+                                        <tr className="bg-gray-50">
+                                            <td colSpan={2} className="px-4 py-3 text-sm font-medium text-gray-900">Daily Totals</td>
+                                            <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right">{currentNutrition.calories.toFixed(0)}</td>
+                                            <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right">{currentNutrition.proteins.toFixed(1)}g</td>
+                                            <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right">{currentNutrition.carbs.toFixed(1)}g</td>
+                                            <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right">{currentNutrition.fats.toFixed(1)}g</td>
+                                        </tr>
+                                    </tfoot>
+                                )}
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="space-y-8">
                 {breakfast.length > 0 && (

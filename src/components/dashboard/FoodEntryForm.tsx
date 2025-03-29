@@ -85,11 +85,21 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
             startCamera();
         }
     };
-
     const startCamera = async () => {
         try {
             if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                // Different constraints for mobile vs desktop
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+                const constraints = {
+                    video: isMobile
+                        ? {
+                            facingMode: { exact: "environment" } // Use back camera on mobile
+                        }
+                        : true // Use default (usually front) camera on desktop
+                };
+
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 setCameraStream(stream);
 
                 if (videoRef.current) {
@@ -100,6 +110,22 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
             }
         } catch (err) {
             console.error('Error accessing camera:', err);
+
+            // If environment camera fails on mobile, try again with any camera
+            if (err instanceof Error && /facingMode/.test(err.message)) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    setCameraStream(stream);
+
+                    if (videoRef.current) {
+                        videoRef.current.srcObject = stream;
+                    }
+                    return;
+                } catch (fallbackErr) {
+                    console.error('Fallback camera also failed:', fallbackErr);
+                }
+            }
+
             setError('Could not access camera. Please check permissions and try again.');
             setInputMethod('manual');
         }

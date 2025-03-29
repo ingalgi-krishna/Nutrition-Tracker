@@ -250,7 +250,6 @@ export default function Dashboard() {
                             data={analyticsData.dailyTotals}
                             recommended={analyticsData.recommendedMacros.calories}
                         />
-                       // Continuing from the Dashboard page.tsx
                         <MacroBreakdownChart
                             proteins={analyticsData.macroBreakdown.proteins}
                             carbs={analyticsData.macroBreakdown.carbs}

@@ -2,118 +2,249 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Font imports */
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap');
+/* Import DM Sans font as per your requirements */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap');
 
-/* Custom font face declarations (optional, but can help with loading) */
+/* Custom font face declarations for optimized loading */
 @font-face {
-  font-family: 'Noto Sans';
-  src: url('https://fonts.gstatic.com/s/notosans/v30/o-0IIpQlx3QUlC5A4PNr4OARDW_0.woff2') format('woff2');
+  font-family: 'DM Sans';
+  src: url('https://fonts.gstatic.com/s/dmsans/v14/rP2tp2ywxg089UriI5-g4vlH9VoD8CmcqZG40F9JadbnoEwAopxhTQ.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
 }
 
 @font-face {
-  font-family: 'Montserrat';
-  src: url('https://fonts.gstatic.com/s/montserrat/v25/JTUSjIg69CK48gW7PXoo9WlhyzM.woff2') format('woff2');
-  font-weight: 400;
+  font-family: 'DM Sans';
+  src: url('https://fonts.gstatic.com/s/dmsans/v14/rP2tp2ywxg089UriI5-g4vlH9VoD8CmcqZG40F9JadbnoEwAo5thTQ.woff2') format('woff2');
+  font-weight: 700;
   font-style: normal;
 }
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 246, 248, 250;
-  --background-end-rgb: 255, 255, 255;
-}
+  /* Kcalculate AI brand colors */
+  --white: #FEFEFF;
+  --black: #010100;
+  --pistachio: #ABD483;
+  --asparagus: #8BAA7C;
+  --safety-orange: #FC842D;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
+  /* Default text/background */
+  --foreground: var(--black);
+  --background: var(--white);
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  /* Explicitly set font family */
-  font-family: 'Montserrat', sans-serif;
-  background-color: white;
-  color: black;
+  color: var(--foreground);
+  background-color: var(--background);
+  font-family: 'DM Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Headings in Noto Sans */
+/* Typography system */
 h1,
 h2,
 h3,
 h4,
 h5,
 h6 {
-  font-family: 'Noto Sans', sans-serif;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--black);
 }
 
 /* Ensure input text is visible */
 input,
 textarea,
 select {
-  color: black !important;
-  font-family: 'Montserrat', sans-serif;
+  color: var(--black) !important;
+  font-family: 'DM Sans', sans-serif;
 }
 
-/* Custom classes using current Tailwind utilities */
+/* Custom Kcalculate AI Design System Components */
 .btn-primary {
-  @apply bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2;
-  font-family: 'Montserrat', sans-serif;
+  background-color: #FC842D;
+  color: white;
+  font-weight: 700;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(252, 132, 45, 0.2);
+  transition: all 0.3s ease;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.btn-primary:hover {
+  background-color: #e77929;
+  box-shadow: 0 10px 15px -3px rgba(252, 132, 45, 0.3);
 }
 
 .btn-secondary {
-  @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2;
-  font-family: 'Montserrat', sans-serif;
+  background-color: white;
+  color: #010100;
+  font-weight: 700;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  border: 2px solid #ABD483;
+  transition: all 0.3s ease;
+  font-family: 'DM Sans', sans-serif;
 }
 
-.card {
-  @apply bg-white rounded-lg shadow-md p-6;
+.btn-secondary:hover {
+  background-color: rgba(171, 212, 131, 0.1);
 }
 
+.btn-tertiary {
+  color: #8BAA7C;
+  font-weight: 700;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.btn-tertiary:hover {
+  background-color: rgba(139, 170, 124, 0.1);
+}
+
+/* Card system using Bento design */
+.bento-card {
+  background-color: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(171, 212, 131, 0.2);
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.bento-card:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.bento-card-highlighted {
+  background: linear-gradient(to right, rgba(139, 170, 124, 0.2), rgba(171, 212, 131, 0.2));
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+}
+
+.bento-card-dark {
+  background-color: #010100;
+  color: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+}
+
+/* Form controls */
 .input-field {
-  @apply appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500;
-  font-family: 'Montserrat', sans-serif;
+  appearance: none;
+  border: 2px solid #e2e8f0;
+  border-radius: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  color: #010100 !important;
+  line-height: 1.5;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.3s ease;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: #8BAA7C;
+  box-shadow: 0 0 0 3px rgba(139, 170, 124, 0.2);
 }
 
 .form-label {
-  @apply block text-gray-700 text-sm font-bold mb-2;
-  font-family: 'Montserrat', sans-serif;
+  display: block;
+  color: #010100;
+  font-size: 0.875rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  font-family: 'DM Sans', sans-serif;
 }
 
-/* Title class using Noto Sans */
-.title {
-  font-family: 'Noto Sans', sans-serif;
+/* Badges and status indicators */
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 700;
 }
 
-/* Utility classes to force font families */
-.font-noto {
-  font-family: 'Noto Sans', sans-serif;
+.badge-green {
+  background-color: rgba(171, 212, 131, 0.2);
+  color: #8BAA7C;
 }
 
-.font-montserrat {
-  font-family: 'Montserrat', sans-serif;
+.badge-orange {
+  background-color: rgba(252, 132, 45, 0.2);
+  color: #FC842D;
 }
 
-/* Ensure text visibility across different elements */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-p,
-span,
-div,
-button,
-input,
-textarea,
-select {
-  color: black;
-  margin: 0;
-  padding: 0;
+/* Feature icon container */
+.feature-icon-container {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 9999px;
+  background-color: rgba(139, 170, 124, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+/* Animation utilities for use with Framer Motion */
+.animated-gradient-bg {
+  background: linear-gradient(-45deg, var(--asparagus), var(--pistachio), var(--asparagus), var(--pistachio));
+  background-size: 400% 400%;
+  animation: gradient 15s ease infinite;
+}
+
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Responsive typography */
+@media (max-width: 640px) {
+  h1 {
+    font-size: 2.25rem;
+  }
+
+  h2 {
+    font-size: 1.875rem;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+  }
+}
+
+/* Reusable transition effects */
+.transition-standard {
+  transition: all 0.3s ease;
+}
+
+/* Utility for image containers */
+.aspect-square-container {
+  aspect-ratio: 1/1;
+  overflow: hidden;
+  border-radius: 0.5rem;
+}
+
+.aspect-video-container {
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  border-radius: 0.5rem;
 }

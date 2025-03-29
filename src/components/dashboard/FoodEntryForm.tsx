@@ -3,7 +3,26 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/components/Providers/AuthProvider';
-import { Loader2, Upload, Camera, X, Plus } from 'lucide-react';
+import {
+    Loader2,
+    Upload,
+    Camera,
+    X,
+    Plus,
+    RefreshCw,
+    Utensils,
+    Scan,
+    ImageIcon,
+    Pencil,
+    Calendar,
+    FileText,
+    Flame,
+    Droplet,
+    Wheat,
+    Beef,
+    CheckCircle
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Add this utility function at the top of your file (outside the component)
 const getLocalISOString = () => {
@@ -470,61 +489,82 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
     };
 
     return (
-        <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Add Food Entry</h2>
+        <div className="p-5">
+            {/* Error and success messages */}
+            <AnimatePresence>
+                {error && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.2 }}
+                        className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm border-l-4 border-red-500 flex items-center"
+                    >
+                        <X className="h-5 w-5 text-red-500 mr-2" />
+                        <span>{error}</span>
+                    </motion.div>
+                )}
 
-            {error && (
-                <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md text-sm">
-                    {error}
-                </div>
-            )}
-
-            {success && (
-                <div className="mb-4 p-3 bg-green-50 text-green-700 rounded-md text-sm">
-                    {success}
-                </div>
-            )}
+                {success && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.2 }}
+                        className="mb-4 p-3 bg-green-50 text-green-700 rounded-lg text-sm border-l-4 border-green-500 flex items-center"
+                    >
+                        <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+                        <span>{success}</span>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Input method selector */}
             <div className="mb-6">
-                <div className="flex border border-gray-300 rounded-md overflow-hidden">
+                <div className="flex border border-[#ABD483]/30 rounded-lg overflow-hidden bg-white shadow-sm">
                     <button
                         type="button"
                         onClick={() => handleInputMethodChange('manual')}
-                        className={`flex-1 py-2 px-4 text-sm font-medium ${inputMethod === 'manual'
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                        className={`flex-1 py-2.5 px-4 text-sm font-medium flex justify-center items-center gap-1.5 transition-colors ${inputMethod === 'manual'
+                            ? 'bg-[#8BAA7C] text-white'
+                            : 'bg-gray-50 text-gray-700 hover:bg-[#8BAA7C]/10 hover:text-[#8BAA7C]'
                             }`}
                     >
-                        Manual Entry
+                        <Pencil className="h-4 w-4" />
+                        <span>Manual</span>
                     </button>
                     <button
                         type="button"
                         onClick={() => handleInputMethodChange('image')}
-                        className={`flex-1 py-2 px-4 text-sm font-medium ${inputMethod === 'image'
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                        className={`flex-1 py-2.5 px-4 text-sm font-medium flex justify-center items-center gap-1.5 transition-colors ${inputMethod === 'image'
+                            ? 'bg-[#8BAA7C] text-white'
+                            : 'bg-gray-50 text-gray-700 hover:bg-[#8BAA7C]/10 hover:text-[#8BAA7C]'
                             }`}
                     >
-                        Upload Image
+                        <ImageIcon className="h-4 w-4" />
+                        <span>Upload</span>
                     </button>
                     <button
                         type="button"
                         onClick={() => handleInputMethodChange('camera')}
-                        className={`flex-1 py-2 px-4 text-sm font-medium ${inputMethod === 'camera'
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                        className={`flex-1 py-2.5 px-4 text-sm font-medium flex justify-center items-center gap-1.5 transition-colors ${inputMethod === 'camera'
+                            ? 'bg-[#8BAA7C] text-white'
+                            : 'bg-gray-50 text-gray-700 hover:bg-[#8BAA7C]/10 hover:text-[#8BAA7C]'
                             }`}
                     >
-                        Camera
+                        <Camera className="h-4 w-4" />
+                        <span>Camera</span>
                     </button>
                 </div>
             </div>
 
             {/* Image upload area */}
             {inputMethod === 'image' && !imagePreview && (
-                <div
-                    className="mb-6 border-2 border-dashed border-gray-300 rounded-md p-6 text-center cursor-pointer hover:border-indigo-500 transition-colors"
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                    className="mb-6 border-2 border-dashed border-[#ABD483]/40 rounded-lg p-8 text-center cursor-pointer hover:border-[#8BAA7C] hover:bg-[#ABD483]/5 transition-all"
                     onClick={() => fileInputRef.current?.click()}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={handleFileDrop}
@@ -536,82 +576,114 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
                         accept="image/*"
                         className="hidden"
                     />
-                    <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                    <p className="mt-2 text-sm text-gray-600">
+                    <div className="mx-auto h-16 w-16 rounded-full bg-[#ABD483]/10 flex items-center justify-center mb-3">
+                        <Upload className="h-8 w-8 text-[#8BAA7C]" />
+                    </div>
+                    <p className="text-[#010100] font-medium">
                         Click to upload or drag and drop
                     </p>
-                    <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
-                </div>
+                    <p className="text-sm text-gray-500 mt-1">
+                        PNG, JPG, GIF up to 10MB
+                    </p>
+                    <p className="text-xs text-[#8BAA7C] mt-4 bg-[#ABD483]/10 inline-block px-3 py-1 rounded-full">
+                        Our AI will analyze your food automatically
+                    </p>
+                </motion.div>
             )}
 
             {/* Camera view */}
             {inputMethod === 'camera' && !imagePreview && (
-                <div className="mb-6 border border-gray-300 rounded-md overflow-hidden">
-                    <div className="relative bg-black aspect-video">
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                    className="mb-6 border border-[#ABD483]/30 rounded-lg overflow-hidden shadow-sm bg-black"
+                >
+                    <div className="relative aspect-video">
                         <video
                             ref={videoRef}
                             autoPlay
                             playsInline
                             className="w-full h-full object-cover"
                         />
-                        <div className="absolute bottom-4 left-0 right-0 flex justify-center items-center space-x-4">
+                        <div className="absolute top-4 left-4 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
+                            {cameraFacing === 'environment' ? 'Back Camera' : 'Front Camera'}
+                        </div>
+                        <div className="absolute bottom-6 left-0 right-0 flex justify-center items-center space-x-6">
                             <button
                                 type="button"
                                 onClick={toggleCamera}
-                                className="bg-white rounded-full p-3 shadow-lg"
+                                className="bg-white rounded-full p-3 shadow-lg hover:bg-gray-100 transition-colors"
                                 aria-label="Switch camera"
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-600">
-                                    <path d="M16 3h5v5"></path>
-                                    <path d="M8 21h-5v-5"></path>
-                                    <path d="M21 3l-7 7"></path>
-                                    <path d="M3 21l7-7"></path>
-                                </svg>
+                                <RefreshCw className="h-6 w-6 text-[#8BAA7C]" />
                             </button>
                             <button
                                 type="button"
                                 onClick={captureImage}
-                                className="bg-white rounded-full p-3 shadow-lg"
+                                className="bg-white rounded-full p-5 shadow-lg hover:bg-gray-100 transition-colors"
                                 aria-label="Take photo"
                             >
-                                <Camera className="h-6 w-6 text-indigo-600" />
+                                <Camera className="h-8 w-8 text-[#FC842D]" />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleInputMethodChange('manual')}
+                                className="bg-white rounded-full p-3 shadow-lg hover:bg-gray-100 transition-colors"
+                                aria-label="Cancel"
+                            >
+                                <X className="h-6 w-6 text-gray-500" />
                             </button>
                         </div>
                     </div>
                     <canvas ref={canvasRef} className="hidden" />
-                </div>
+                </motion.div>
             )}
 
             {/* Image preview */}
             {imagePreview && (
-                <div className="mb-6 relative">
-                    <img
-                        src={imagePreview}
-                        alt="Food preview"
-                        className="w-full h-auto rounded-md max-h-60 object-cover"
-                    />
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                    className="mb-6 relative"
+                >
+                    <div className="rounded-lg overflow-hidden shadow-md border border-[#ABD483]/20">
+                        <img
+                            src={imagePreview}
+                            alt="Food preview"
+                            className="w-full h-auto object-cover max-h-60"
+                        />
+                    </div>
                     <button
                         type="button"
                         onClick={handleImageCancel}
-                        className="absolute top-2 right-2 bg-white rounded-full p-1 shadow-md"
+                        className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1.5 hover:bg-black/70 transition-colors"
                     >
-                        <X className="h-5 w-5 text-gray-600" />
+                        <X className="h-5 w-5" />
                     </button>
 
                     {analyzing && (
-                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-md">
-                            <div className="text-center text-white">
-                                <Loader2 className="animate-spin h-8 w-8 mx-auto mb-2" />
-                                <p className="text-sm">Analyzing food...</p>
+                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-lg">
+                            <div className="text-center text-white p-4 bg-black/70 rounded-lg">
+                                <div className="relative mb-3">
+                                    <Loader2 className="animate-spin h-10 w-10 mx-auto text-[#8BAA7C]" />
+                                    <div className="absolute -top-1 -right-1 h-5 w-5 bg-[#FC842D] rounded-full flex items-center justify-center">
+                                        <Scan className="h-3 w-3 text-white" />
+                                    </div>
+                                </div>
+                                <p className="text-sm font-medium">AI analyzing your food...</p>
+                                <p className="text-xs text-gray-300 mt-1">Please wait a moment</p>
                             </div>
                         </div>
                     )}
-                </div>
+                </motion.div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
-                    <label htmlFor="foodName" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="foodName" className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                        <FileText className="h-4 w-4 text-[#8BAA7C] mr-1.5" />
                         Food Name
                     </label>
                     <input
@@ -621,13 +693,15 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
                         value={formData.foodName}
                         onChange={handleChange}
                         required
-                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        className="block w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8BAA7C] focus:border-[#8BAA7C]"
+                        placeholder="E.g., Chicken Salad"
                     />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <label htmlFor="calories" className="block text-sm font-medium text-gray-700">
+                        <label htmlFor="calories" className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                            <Flame className="h-4 w-4 text-[#FC842D] mr-1.5" />
                             Calories
                         </label>
                         <input
@@ -639,12 +713,14 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
                             required
                             min="0"
                             step="0.1"
-                            className="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                            className="block w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8BAA7C] focus:border-[#8BAA7C]"
+                            placeholder="0"
                         />
                     </div>
 
                     <div>
-                        <label htmlFor="proteins" className="block text-sm font-medium text-gray-700">
+                        <label htmlFor="proteins" className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                            <Beef className="h-4 w-4 text-[#8BAA7C] mr-1.5" />
                             Proteins (g)
                         </label>
                         <input
@@ -656,12 +732,14 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
                             required
                             min="0"
                             step="0.1"
-                            className="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                            className="block w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8BAA7C] focus:border-[#8BAA7C]"
+                            placeholder="0"
                         />
                     </div>
 
                     <div>
-                        <label htmlFor="carbs" className="block text-sm font-medium text-gray-700">
+                        <label htmlFor="carbs" className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                            <Wheat className="h-4 w-4 text-[#8BAA7C] mr-1.5" />
                             Carbs (g)
                         </label>
                         <input
@@ -673,12 +751,14 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
                             required
                             min="0"
                             step="0.1"
-                            className="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                            className="block w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8BAA7C] focus:border-[#8BAA7C]"
+                            placeholder="0"
                         />
                     </div>
 
                     <div>
-                        <label htmlFor="fats" className="block text-sm font-medium text-gray-700">
+                        <label htmlFor="fats" className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                            <Droplet className="h-4 w-4 text-[#8BAA7C] mr-1.5" />
                             Fats (g)
                         </label>
                         <input
@@ -690,13 +770,15 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
                             required
                             min="0"
                             step="0.1"
-                            className="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                            className="block w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8BAA7C] focus:border-[#8BAA7C]"
+                            placeholder="0"
                         />
                     </div>
                 </div>
 
                 <div>
-                    <label htmlFor="timestamp" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="timestamp" className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                        <Calendar className="h-4 w-4 text-[#8BAA7C] mr-1.5" />
                         Date & Time
                     </label>
                     <input
@@ -706,24 +788,36 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
                         value={formData.timestamp}
                         onChange={handleChange}
                         required
-                        className="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        className="block w-full p-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8BAA7C] focus:border-[#8BAA7C]"
                     />
                 </div>
 
-                <button
-                    type="submit"
-                    disabled={loading || analyzing}
-                    className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-                >
-                    {loading ? (
-                        <>
-                            <Loader2 className="animate-spin -ml-1 mr-2 h-5 w-5" />
-                            Saving...
-                        </>
-                    ) : (
-                        'Add Food Entry'
-                    )}
-                </button>
+                <div className="pt-2">
+                    <button
+                        type="submit"
+                        disabled={loading || analyzing}
+                        className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-md text-sm font-bold text-white bg-[#FC842D] hover:bg-[#FC842D]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FC842D] disabled:opacity-50 transition-colors"
+                    >
+                        {loading ? (
+                            <div className="flex items-center">
+                                <Loader2 className="animate-spin mr-2 h-5 w-5" />
+                                <span>Saving...</span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center">
+                                <Plus className="mr-2 h-5 w-5" />
+                                <span>Add Food Entry</span>
+                            </div>
+                        )}
+                    </button>
+                </div>
+
+                {/* Quick tip */}
+                {inputMethod === 'manual' && !analyzing && !loading && (
+                    <div className="pt-4 text-xs text-gray-500 text-center border-t border-gray-100">
+                        <span className="text-[#8BAA7C] font-medium">Pro tip:</span> Use the camera to analyze food automatically with our AI
+                    </div>
+                )}
             </form>
         </div>
     );

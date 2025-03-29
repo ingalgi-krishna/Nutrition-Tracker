@@ -1,5 +1,7 @@
 // src/components/dashboard/StatsCard.tsx
 import React from 'react';
+import { motion } from 'framer-motion';
+import { ArrowUp, ArrowDown } from 'lucide-react';
 
 interface StatCardProps {
     title: string;
@@ -11,6 +13,8 @@ interface StatCardProps {
         label: string;
         direction: 'up' | 'down' | 'neutral';
     };
+    accentColor?: string;
+    className?: string;
 }
 
 const StatsCard: React.FC<StatCardProps> = ({
@@ -18,47 +22,49 @@ const StatsCard: React.FC<StatCardProps> = ({
     value,
     subtitle,
     icon,
-    trend
+    trend,
+    accentColor = "#8BAA7C",
+    className = ""
 }) => {
     return (
-        <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ y: -5 }}
+            transition={{ duration: 0.3 }}
+            className={`bg-white rounded-xl shadow-sm p-5 border border-[#ABD483]/20 font-['DM_Sans'] ${className}`}
+        >
             <div className="flex justify-between items-start">
                 <div>
                     <p className="text-sm font-medium text-gray-600">{title}</p>
-                    <p className="mt-1 text-2xl font-semibold text-gray-900">{value}</p>
+                    <p className="mt-1 text-2xl font-bold text-[#010100]">{value}</p>
                     {subtitle && (
-                        <p className="mt-1 text-sm text-gray-500">{subtitle}</p>
+                        <p className="mt-1 text-xs text-gray-500">{subtitle}</p>
                     )}
                 </div>
                 {icon && (
-                    <div className="p-3 rounded-full bg-indigo-50 text-indigo-600">
-                        {icon}
+                    <div className="p-3 rounded-full bg-opacity-20" style={{ backgroundColor: `${accentColor}30` }}>
+                        <div style={{ color: accentColor }}>
+                            {icon}
+                        </div>
                     </div>
                 )}
             </div>
 
             {trend && (
-                <div className="mt-4">
-                    <div className={`flex items-center text-sm ${trend.direction === 'up' ? 'text-green-600' :
-                        trend.direction === 'down' ? 'text-red-600' :
-                            'text-gray-600'
+                <div className="mt-4 flex items-center">
+                    <div className={`flex items-center justify-center text-sm px-2 py-0.5 rounded-full ${trend.direction === 'up' ? 'text-green-600 bg-green-50' :
+                        trend.direction === 'down' ? 'text-red-600 bg-red-50' :
+                            'text-gray-600 bg-gray-50'
                         }`}>
-                        {trend.direction === 'up' && (
-                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                            </svg>
-                        )}
-                        {trend.direction === 'down' && (
-                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                        )}
-                        <span className="font-medium">{trend.value}%</span>
-                        <span className="ml-1 text-gray-500">{trend.label}</span>
+                        {trend.direction === 'up' && <ArrowUp className="w-3 h-3 mr-0.5" />}
+                        {trend.direction === 'down' && <ArrowDown className="w-3 h-3 mr-0.5" />}
+                        <span className="font-medium text-xs">{trend.value}%</span>
                     </div>
+                    <span className="ml-2 text-xs text-gray-500">{trend.label}</span>
                 </div>
             )}
-        </div>
+        </motion.div>
     );
 };
 

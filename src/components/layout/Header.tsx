@@ -129,14 +129,6 @@ const Header: React.FC = () => {
                                     {isActive('/recommendations') && <ActiveIndicator />}
                                 </Link>
 
-                                <Link href="/analytics" className={navItemClass('/analytics')}>
-                                    <div className="flex items-center space-x-1.5">
-                                        <BarChart2 className="w-4 h-4" />
-                                        <span>Analytics</span>
-                                    </div>
-                                    {isActive('/analytics') && <ActiveIndicator />}
-                                </Link>
-
                                 {/* User dropdown menu */}
                                 <div className="relative ml-4" ref={userMenuRef}>
                                     <button

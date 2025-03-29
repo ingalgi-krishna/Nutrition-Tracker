@@ -48,7 +48,7 @@ const BMICard: React.FC<BMICardProps> = ({ bmi, height, weight }) => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="bg-white rounded-xl shadow-sm p-6 border border-[#ABD483]/20 font-['DM_Sans']"
+                className="bg-white rounded-xl shadow-sm p-6 border border-[#ABD483]/20 font-DM_Sans"
             >
                 <div className="flex items-center mb-5">
                     <div className="w-10 h-10 rounded-full bg-[#ABD483]/10 flex items-center justify-center mr-3">
@@ -75,7 +75,7 @@ const BMICard: React.FC<BMICardProps> = ({ bmi, height, weight }) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="bg-white rounded-xl shadow-sm p-6 border border-[#ABD483]/20 font-['DM_Sans']"
+            className="bg-white rounded-xl shadow-sm p-6 border border-[#ABD483]/20 font-DM_Sans"
         >
             <div className="flex items-center mb-5">
                 <div className="w-10 h-10 rounded-full bg-[#ABD483]/10 flex items-center justify-center mr-3">

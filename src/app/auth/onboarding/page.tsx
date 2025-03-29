@@ -307,7 +307,7 @@ export default function OnboardingForm() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#FEFEFF] py-12 px-4 sm:px-6 lg:px-8 font-['DM_Sans']">
+        <div className="min-h-screen flex items-center justify-center bg-[#FEFEFF] py-12 px-4 sm:px-6 lg:px-8 font-DM_Sans">
             <div className="w-full max-w-3xl">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}

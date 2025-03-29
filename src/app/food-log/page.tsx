@@ -20,7 +20,7 @@ export default function FoodLog() {
 
     if (!user) {
         return (
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 font-['DM_Sans']">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 font-DM_Sans">
                 <div className="text-center">
                     <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#ABD483]/20 flex items-center justify-center">
                         <div className="animate-spin h-8 w-8 border-4 border-[#8BAA7C] border-t-transparent rounded-full"></div>
@@ -33,7 +33,7 @@ export default function FoodLog() {
     }
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 font-['DM_Sans'] bg-[#FEFEFF]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 font-DM_Sans bg-[#FEFEFF]">
             <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}

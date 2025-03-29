@@ -21,7 +21,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         { name: 'Dashboard', href: '/dashboard', icon: Home },
         { name: 'Food Log', href: '/food-log', icon: Book },
         { name: 'Recommendations', href: '/recommendations', icon: Calendar },
-        { name: 'Analytics', href: '/analytics', icon: BarChart2 },
         { name: 'Profile', href: '/profile', icon: User },
     ];
 

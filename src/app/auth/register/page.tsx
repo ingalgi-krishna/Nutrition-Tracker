@@ -6,8 +6,10 @@ import Link from 'next/link';
 import { useAuth } from '@/components/Providers/AuthProvider';
 import { Loader2, Mail, Lock, AlertCircle, CheckCircle, User, ArrowRight, Info } from 'lucide-react';
 import { motion } from 'framer-motion';
-import Lottie from 'react-lottie-player';
-import nutritionAnimation from '@/../public/flying_love.json'; // You'll need to add this animation
+import dynamic from 'next/dynamic';
+
+// Dynamically import Lottie component with ssr: false
+const Lottie = dynamic(() => import('react-lottie-player'), { ssr: false });
 
 export default function RegisterPage() {
     const { register, error: authError } = useAuth();
@@ -20,6 +22,18 @@ export default function RegisterPage() {
     const [formErrors, setFormErrors] = useState({ name: '', email: '', password: '', confirmPassword: '' });
     const [touched, setTouched] = useState({ name: false, email: false, password: false, confirmPassword: false });
     const [passwordStrength, setPasswordStrength] = useState(0);
+    const [animationData, setAnimationData] = useState<any>(null);
+
+    // Load animation data client-side only
+    useEffect(() => {
+        import('@/../public/nutrition.json')
+            .then(animationModule => {
+                return setAnimationData(animationModule.default);
+            })
+            .catch(err => {
+                console.error('Failed to load animation:', err);
+            });
+    }, []);
 
     // Password strength calculation
     useEffect(() => {
@@ -206,12 +220,14 @@ export default function RegisterPage() {
                         transition={{ duration: 1, delay: 0.3 }}
                         className="w-full max-w-md"
                     >
-                        <Lottie
-                            loop
-                            animationData={nutritionAnimation}
-                            play
-                            style={{ width: '100%', height: 320 }}
-                        />
+                        {animationData && (
+                            <Lottie
+                                loop
+                                animationData={animationData}
+                                play
+                                style={{ width: '100%', height: 320 }}
+                            />
+                        )}
                     </motion.div>
 
                     <motion.div

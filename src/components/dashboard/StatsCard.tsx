@@ -32,7 +32,7 @@ const StatsCard: React.FC<StatCardProps> = ({
             animate={{ opacity: 1, y: 0 }}
             whileHover={{ y: -5 }}
             transition={{ duration: 0.3 }}
-            className={`bg-white rounded-xl shadow-sm p-5 border border-[#ABD483]/20 font-['DM_Sans'] ${className}`}
+            className={`bg-white rounded-xl shadow-sm p-5 border border-[#ABD483]/20 font-DM_Sans ${className}`}
         >
             <div className="flex justify-between items-start">
                 <div>

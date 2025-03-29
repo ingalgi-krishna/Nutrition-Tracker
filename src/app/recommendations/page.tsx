@@ -339,7 +339,7 @@ export default function Recommendations() {
 
     if (!user) {
         return (
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 font-['DM_Sans']">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 font-DM_Sans">
                 <div className="text-center">
                     <h1 className="text-3xl font-bold text-[#010100] mb-4">Loading...</h1>
                     <p className="text-gray-600">Please wait while we check your authentication status.</p>
@@ -350,7 +350,7 @@ export default function Recommendations() {
 
     if (loading && !refreshing) {
         return (
-            <div className="flex justify-center items-center min-h-[60vh] bg-[#FEFEFF] font-['DM_Sans']">
+            <div className="flex justify-center items-center min-h-[60vh] bg-[#FEFEFF] font-DM_Sans">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -388,7 +388,7 @@ export default function Recommendations() {
     const snacks = recommendations.filter(item => item.mealTime === 'snack');
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 font-['DM_Sans'] bg-[#FEFEFF]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 font-DM_Sans bg-[#FEFEFF]">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                 <div>
                     <h1 className="text-3xl font-bold text-[#010100]">

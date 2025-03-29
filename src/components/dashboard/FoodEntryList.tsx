@@ -180,7 +180,7 @@ export default function FoodEntryList() {
     }
 
     return (
-        <div className="font-['DM_Sans']">
+        <div className="font-DM_Sans">
             <div className="p-6 border-b border-[#ABD483]/20 bg-gradient-to-r from-gray-50 to-white">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <h2 className="text-xl font-bold text-[#010100] flex items-center">

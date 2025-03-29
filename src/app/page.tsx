@@ -15,13 +15,13 @@ import {
 
 export default function Home() {
   return (
-    <div className="bg-[#FEFEFF] font-['DM_Sans']">
+    <div className="bg-[#FEFEFF] font-DM_Sans">
       {/* Hero section - reimagined with overlapping elements */}
       <div className="relative overflow-hidden">
         <div className="absolute top-20 right-[20%] w-64 h-64 rounded-full bg-[#ABD483]/20 blur-3xl"></div>
         <div className="absolute bottom-40 left-[10%] w-96 h-96 rounded-full bg-[#8BAA7C]/10 blur-3xl"></div>
 
-        <div className="max-w-7xl mx-auto px-4 pt-24 pb-20 md:pt-32 md:pb-28">
+        <div className="max-w-7xl mx-auto px-4 pt-24 pb-20 md:pt-12 md:pb-20">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -74,7 +74,7 @@ export default function Home() {
             >
               <div className="relative z-10 bg-white p-3 rounded-2xl shadow-xl overflow-hidden">
                 <img
-                  src="/nutrition.jpg"
+                  src="/dashboard.png"
                   alt="Kcalculate AI in action"
                   className="w-full h-auto rounded-xl"
                 />

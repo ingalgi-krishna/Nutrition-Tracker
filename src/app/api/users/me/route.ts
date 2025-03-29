@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import User from '@/models/User';
 import { verifyToken } from '@/lib/jwt';
-
 export async function GET(request: NextRequest) {
     try {
         // Get token from cookies

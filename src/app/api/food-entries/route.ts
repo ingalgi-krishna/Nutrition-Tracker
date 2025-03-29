@@ -65,6 +65,9 @@ export async function POST(req: Request) {
 
     await connectToDatabase();
 
+    // Parse the timestamp correctly
+    const entryTimestamp = timestamp ? new Date(timestamp) : new Date();
+
     const foodEntry = new FoodEntry({
       userId,
       foodName,
@@ -72,8 +75,8 @@ export async function POST(req: Request) {
       proteins,
       carbs,
       fats,
-      imageUrl,
-      timestamp: timestamp || new Date(),
+      imageUrl, // This should be the Cloudinary URL
+      timestamp: entryTimestamp,
     });
 
     await foodEntry.save();

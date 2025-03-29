@@ -11,7 +11,8 @@ import MacroBreakdownChart from '@/components/dashboard/MacroBreakdownChart';
 import TopFoodsChart from '@/components/dashboard/TopFoodsChart';
 import StatsCard from '@/components/dashboard/StatsCard';
 import FoodCard from '@/components/dashboard/FoodCard';
-
+import BMRCard from '@/components/dashboard/BMRCard';
+// Update the AnalyticsData interface in your dashboard component
 interface AnalyticsData {
     user: {
         id: string;
@@ -20,6 +21,7 @@ interface AnalyticsData {
         height: number | null;
         weight: number | null;
         goalType: string;
+        activityLevel?: string; // Add this property
     };
     dailyTotals: Array<{
         date: string;
@@ -61,6 +63,10 @@ interface AnalyticsData {
         proteins: number;
         carbs: number;
         fats: number;
+        bmr: number; // Add these new properties
+        tdee: number;
+        activityMultiplier: number;
+        goalAdjustment: number;
     };
 }
 
@@ -283,6 +289,22 @@ export default function Dashboard() {
                     </a>
                 </div>
             )}
+
+            {analyticsData && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Existing cards */}
+
+                    {/* New BMR Card */}
+                    <BMRCard
+                        bmr={analyticsData.recommendedMacros.bmr}
+                        tdee={analyticsData.recommendedMacros.tdee}
+                        activityMultiplier={analyticsData.recommendedMacros.activityMultiplier}
+                        activityLevel={analyticsData.user.activityLevel || 'moderate'}
+                        goalType={analyticsData.user.goalType || 'maintain'}
+                    />
+                </div>
+            )}
+
         </div>
     );
 }

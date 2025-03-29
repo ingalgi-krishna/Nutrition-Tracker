@@ -257,7 +257,12 @@ function calculateRecommendedMacros(user: IUser) {
     calories: Math.round(calorieGoal),
     proteins: Math.round(proteinGoal),
     carbs: Math.round(carbGoal),
-    fats: Math.round(fatGoal)
+    fats: Math.round(fatGoal),
+    bmr: Math.round(bmr),                   // Added BMR
+    tdee: Math.round(tdee),                 // Added TDEE
+    activityMultiplier,                     // Added activity multiplier
+    goalAdjustment: user.goalType === 'weight_loss' ? -500 :
+      user.goalType === 'weight_gain' ? 500 : 0  // Added goal adjustment
   };
 }
 

@@ -128,6 +128,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
+    
     const contextValue: AuthContextType = {
         user,
         loading,

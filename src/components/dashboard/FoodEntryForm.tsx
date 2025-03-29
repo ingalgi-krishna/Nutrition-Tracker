@@ -5,6 +5,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/components/Providers/AuthProvider';
 import { Loader2, Upload, Camera, X, Plus } from 'lucide-react';
 
+// Add this utility function at the top of your file (outside the component)
+const getLocalISOString = () => {
+    const now = new Date();
+    const offset = now.getTimezoneOffset() * 60000; // offset in milliseconds
+    const localTime = new Date(now.getTime() - offset);
+    return localTime.toISOString().slice(0, 16); // Format as YYYY-MM-DDTHH:MM
+};
+
 interface FoodEntryFormProps {
     onSuccess: () => void;
 }
@@ -19,6 +27,7 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
     const [success, setSuccess] = useState('');
     const [inputMethod, setInputMethod] = useState<InputMethod>('manual');
     const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [currentEntry, setCurrentEntry] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -30,7 +39,7 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
         proteins: '',
         carbs: '',
         fats: '',
-        timestamp: new Date().toISOString().slice(0, 16),
+        timestamp: getLocalISOString(),
     });
 
     // Clean up camera stream when component unmounts
@@ -45,6 +54,21 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const resetForm = () => {
+        setFormData({
+            foodName: '',
+            calories: '',
+            proteins: '',
+            carbs: '',
+            fats: '',
+            timestamp: getLocalISOString(),
+        });
+        setImagePreview(null);
+        setError('');
+        setSuccess('');
+        setCurrentEntry(null);
     };
 
     const handleInputMethodChange = (method: InputMethod) => {
@@ -143,15 +167,24 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
         };
         reader.readAsDataURL(file);
     };
-    // In src/components/dashboard/FoodEntryForm.tsx
-    // Replace the existing analyzeImage function with this one
 
+    // Updated analyzeImage function
+    // Updated analyzeImage function
     const analyzeImage = async (imageData: string) => {
+        // Clear previous data first
+        setFormData({
+            foodName: '',
+            calories: '',
+            proteins: '',
+            carbs: '',
+            fats: '',
+            timestamp: getLocalISOString(),
+        });
+
         setAnalyzing(true);
         setError('');
 
         try {
-            // Call your Gemini-powered API to analyze the image
             const response = await fetch('/api/analyze-food', {
                 method: 'POST',
                 headers: {
@@ -166,17 +199,39 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
             const result = await response.json();
 
             if (result.success) {
-                // Fill form with analyzed data
-                setFormData(prev => ({
-                    ...prev,
+                console.log("Analysis result:", result.data);
+
+                // Generate a unique ID for this entry
+                const entryId = Date.now().toString();
+                setCurrentEntry(entryId);
+
+                // Check if the food is unknown
+                const isUnknownFood =
+                    result.data.foodName.toLowerCase().includes("unknown") ||
+                    !result.data.nutrition ||
+                    result.data.nutrition.calories === 0;
+
+                // Update form values with the analysis results
+                setFormData({
                     foodName: result.data.foodName || '',
-                    calories: result.data.calories?.toString() || '',
-                    proteins: result.data.proteins?.toString() || '',
-                    carbs: result.data.carbs?.toString() || '',
-                    fats: result.data.fats?.toString() || '',
-                }));
+                    // Only set nutrition values if the food is not unknown
+                    calories: !isUnknownFood ? result.data.nutrition?.calories?.toString() || '' : '',
+                    proteins: !isUnknownFood ? result.data.nutrition?.proteins?.toString() || '' : '',
+                    carbs: !isUnknownFood ? result.data.nutrition?.carbs?.toString() || '' : '',
+                    fats: !isUnknownFood ? result.data.nutrition?.fats?.toString() || '' : '',
+                    timestamp: getLocalISOString(),
+                });
+
+                // Use the cloudinary URL that was already uploaded
+                if (result.data.imageUrl) {
+                    setImagePreview(result.data.imageUrl);
+                }
+
+                // Show a notification if the food is unknown
+                if (isUnknownFood) {
+                    setError("Couldn't identify the food completely. Please fill in the nutrition details manually.");
+                }
             } else {
-                // If analysis fails, keep the image but show error
                 setError(result.error || 'Could not analyze the image. Please fill the details manually.');
             }
         } catch (err) {
@@ -187,22 +242,18 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
         }
     };
 
+    // Updated handleImageCancel function
     const handleImageCancel = () => {
-        setImagePreview(null);
+        resetForm();
 
-        // Reset form if in image mode to encourage reupload
-        if (inputMethod !== 'manual') {
-            setFormData({
-                foodName: '',
-                calories: '',
-                proteins: '',
-                carbs: '',
-                fats: '',
-                timestamp: new Date().toISOString().slice(0, 16),
-            });
+        // If camera was active, stop it
+        if (inputMethod === 'camera' && cameraStream) {
+            cameraStream.getTracks().forEach(track => track.stop());
+            setCameraStream(null);
         }
     };
 
+    // Updated handleSubmit function with proper date handling
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -216,40 +267,32 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
         }
 
         try {
-            // Prepare form data
-            const entryData = {
-                userId: user.id,
-                foodName: formData.foodName,
-                calories: parseFloat(formData.calories) || 0,
-                proteins: parseFloat(formData.proteins) || 0,
-                carbs: parseFloat(formData.carbs) || 0,
-                fats: parseFloat(formData.fats) || 0,
-                timestamp: new Date(formData.timestamp),
-                imageUrl: imagePreview, // Include the image
-            };
+            // Create a proper Date object from the form timestamp
+            const entryDate = new Date(formData.timestamp);
 
-            // Submit the food entry
+            // Only send the imageUrl, NOT the base64 data
             const response = await fetch('/api/food-entries', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(entryData),
+                body: JSON.stringify({
+                    userId: user.id,
+                    foodName: formData.foodName,
+                    calories: parseFloat(formData.calories) || 0,
+                    proteins: parseFloat(formData.proteins) || 0,
+                    carbs: parseFloat(formData.carbs) || 0,
+                    fats: parseFloat(formData.fats) || 0,
+                    imageUrl: imagePreview, // This should now always be the Cloudinary URL from analyze-food
+                    timestamp: entryDate.toISOString(), // Send as ISO string
+                }),
             });
 
             const result = await response.json();
 
             if (result.success) {
                 setSuccess('Food entry added successfully!');
-                setFormData({
-                    foodName: '',
-                    calories: '',
-                    proteins: '',
-                    carbs: '',
-                    fats: '',
-                    timestamp: new Date().toISOString().slice(0, 16),
-                });
-                setImagePreview(null);
+                resetForm(); // Reset everything after successful submission
                 onSuccess();
             } else {
                 setError(result.error || 'Failed to add food entry');

@@ -1,195 +1,159 @@
+// src/app/profile/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { calculateBMI, getBMICategory } from '@/lib/bmi';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/components/Providers/AuthProvider';
+import { Loader2, Save, User, AlertCircle } from 'lucide-react';
 
-interface UserProfile {
-    id: string;
+interface ProfileFormData {
     name: string;
     email: string;
-    height: number;
-    weight: number;
-    bmi: number;
-    goalType: 'weight_loss' | 'weight_gain' | 'maintain';
-    dietaryPreference?: 'vegetarian' | 'non-vegetarian' | 'vegan';
-    allergies?: string[];
-    activityLevel?: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
-    age?: number;
-    gender?: 'male' | 'female' | 'other';
+    height: string;
+    weight: string;
+    age: string;
+    gender: string;
+    goalType: string;
+    dietaryPreference: string;
+    allergies: string[];
+    activityLevel: string;
 }
 
-export default function ProfilePage() {
-    const router = useRouter();
-    const [userData, setUserData] = useState<UserProfile | null>(null);
-    const [formData, setFormData] = useState({
+export default function Profile() {
+    const { user } = useAuth();
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [success, setSuccess] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [formData, setFormData] = useState<ProfileFormData>({
         name: '',
         email: '',
         height: '',
         weight: '',
         age: '',
-        gender: '',
-        dietaryPreference: '',
-        activityLevel: '',
-        allergies: [] as string[]
+        gender: 'other',
+        goalType: 'maintain',
+        dietaryPreference: 'non-vegetarian',
+        allergies: [],
+        activityLevel: 'moderate',
     });
+    const [allergyInput, setAllergyInput] = useState('');
 
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState(false);
-
-    // Fetch user profile data
+    // Fetch user data
     useEffect(() => {
         const fetchUserProfile = async () => {
+            if (!user?.id) return;
+
             try {
                 setLoading(true);
-
                 const response = await fetch('/api/users/me');
 
                 if (!response.ok) {
-                    // If not authenticated, redirect to login
-                    if (response.status === 401) {
-                        router.push('/auth/login');
-                        return;
-                    }
-                    throw new Error(`Failed to fetch profile: ${response.status}`);
+                    throw new Error('Failed to fetch profile data');
                 }
 
                 const data = await response.json();
 
-                if (!data.success) {
-                    throw new Error(data.error || 'Failed to fetch profile');
+                if (data.success) {
+                    setFormData({
+                        name: data.user.name || '',
+                        email: data.user.email || '',
+                        height: data.user.height?.toString() || '',
+                        weight: data.user.weight?.toString() || '',
+                        age: data.user.age?.toString() || '',
+                        gender: data.user.gender || 'other',
+                        goalType: data.user.goalType || 'maintain',
+                        dietaryPreference: data.user.dietaryPreference || 'non-vegetarian',
+                        allergies: data.user.allergies || [],
+                        activityLevel: data.user.activityLevel || 'moderate',
+                    });
+                } else {
+                    setError('Failed to load profile data');
                 }
-
-                // Set the user data state
-                setUserData(data.data);
-
-                // Initialize the form data with user's current values
-                setFormData({
-                    name: data.data.name || '',
-                    email: data.data.email || '',
-                    height: data.data.height ? String(data.data.height) : '',
-                    weight: data.data.weight ? String(data.data.weight) : '',
-                    age: data.data.age ? String(data.data.age) : '',
-                    gender: data.data.gender || '',
-                    dietaryPreference: data.data.dietaryPreference || '',
-                    activityLevel: data.data.activityLevel || '',
-                    allergies: data.data.allergies || []
-                });
             } catch (err) {
-                console.error("Error fetching user profile:", err);
-                setError("Failed to load your profile");
+                console.error('Error fetching profile:', err);
+                setError('Error loading profile. Please try again.');
             } finally {
                 setLoading(false);
             }
         };
 
         fetchUserProfile();
-    }, [router]);
+    }, [user?.id]);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    // Handle form input changes
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    // Handle number inputs
+    const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+
+        // Allow empty value or positive numbers
+        if (value === '' || (Number(value) >= 0)) {
+            setFormData(prev => ({ ...prev, [name]: value }));
+        }
+    };
+
+    // Handle adding allergies
+    const addAllergy = () => {
+        if (allergyInput.trim() && !formData.allergies.includes(allergyInput.trim())) {
+            setFormData(prev => ({
+                ...prev,
+                allergies: [...prev.allergies, allergyInput.trim()]
+            }));
+            setAllergyInput('');
+        }
+    };
+
+    // Handle removing allergies
+    const removeAllergy = (index: number) => {
         setFormData(prev => ({
             ...prev,
-            [name]: value
+            allergies: prev.allergies.filter((_, i) => i !== index)
         }));
     };
 
-    const handleAllergyChange = (allergy: string) => {
-        setFormData(prev => {
-            const allergies = [...prev.allergies];
-
-            if (allergies.includes(allergy)) {
-                return {
-                    ...prev,
-                    allergies: allergies.filter(a => a !== allergy)
-                };
-            } else {
-                return {
-                    ...prev,
-                    allergies: [...allergies, allergy]
-                };
-            }
-        });
-    };
-
+    // Handle form submission
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setSaving(true);
-        setError(null);
-        setSuccess(false);
 
         try {
-            // Validate inputs
-            const height = parseFloat(formData.height);
-            const weight = parseFloat(formData.weight);
-            const age = formData.age ? parseInt(formData.age) : undefined;
+            setSaving(true);
+            setError(null);
+            setSuccess(null);
 
-            if (!formData.name || !formData.email) {
-                throw new Error('Name and email are required');
-            }
-
-            if (isNaN(height) || isNaN(weight) || height <= 0 || weight <= 0) {
-                throw new Error('Please enter valid height and weight values');
-            }
-
-            if (age !== undefined && (isNaN(age) || age <= 0)) {
-                throw new Error('Please enter a valid age');
-            }
-
-            // Calculate BMI
-            const bmi = calculateBMI(height, weight);
-
-            // Determine goal type based on BMI
-            let goalType: 'weight_loss' | 'weight_gain' | 'maintain' = 'maintain';
-            if (bmi < 18.5) {
-                goalType = 'weight_gain';
-            } else if (bmi > 25) {
-                goalType = 'weight_loss';
-            }
-
-            // Prepare the data for API
-            const updateData = {
-                name: formData.name,
-                email: formData.email,
-                height,
-                weight,
-                age,
-                gender: formData.gender || undefined,
-                dietaryPreference: formData.dietaryPreference || undefined,
-                activityLevel: formData.activityLevel || undefined,
-                allergies: formData.allergies
-            };
-
-            // Update the user profile
-            const response = await fetch('/api/users/me', {
+            const response = await fetch('/api/users/profile', {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(updateData),
+                body: JSON.stringify({
+                    name: formData.name,
+                    height: formData.height ? Number(formData.height) : undefined,
+                    weight: formData.weight ? Number(formData.weight) : undefined,
+                    age: formData.age ? Number(formData.age) : undefined,
+                    gender: formData.gender,
+                    goalType: formData.goalType,
+                    dietaryPreference: formData.dietaryPreference,
+                    allergies: formData.allergies,
+                    activityLevel: formData.activityLevel,
+                }),
             });
-
-            if (!response.ok) {
-                throw new Error(`Failed to update profile: ${response.status}`);
-            }
 
             const data = await response.json();
 
-            if (!data.success) {
-                throw new Error(data.error || 'Failed to update profile');
+            if (data.success) {
+                setSuccess('Profile updated successfully!');
+                // Scroll to the top to show the success message
+                window.scrollTo(0, 0);
+            } else {
+                setError(data.message || 'Failed to update profile');
             }
-
-            // Update local user data state
-            setUserData(data.data);
-            setSuccess(true);
-
-            // Scroll to top to show success message
-            window.scrollTo(0, 0);
         } catch (err) {
             console.error('Error updating profile:', err);
-            setError(err instanceof Error ? err.message : 'An error occurred');
+            setError('An error occurred while updating your profile');
         } finally {
             setSaving(false);
         }
@@ -197,264 +161,306 @@ export default function ProfilePage() {
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center h-screen bg-gray-50">
-                <div className="text-center">
-                    <svg
-                        className="animate-spin h-10 w-10 text-indigo-600 mx-auto mb-4"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                    >
-                        <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                        ></circle>
-                        <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                    </svg>
-                    <p className="text-gray-600">Loading your profile...</p>
-                </div>
+            <div className="flex justify-center items-center min-h-screen">
+                <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
             </div>
         );
     }
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <h1 className="text-3xl font-bold text-gray-900 mb-8">Your Profile</h1>
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+            <div className="mb-6">
+                <h1 className="text-3xl font-bold text-gray-900">Profile Settings</h1>
+                <p className="mt-2 text-gray-600">Update your personal information and preferences</p>
+            </div>
 
-            <div className="bg-white shadow-md rounded-lg max-w-3xl mx-auto">
-                <div className="md:grid md:grid-cols-3 md:gap-6 p-6">
-                    <div className="md:col-span-1">
-                        <h3 className="text-lg font-medium leading-6 text-gray-900">Personal Information</h3>
-                        <p className="mt-1 text-sm text-gray-500">
-                            Update your personal information and health metrics.
-                        </p>
+            {success && (
+                <div className="mb-6 p-4 bg-green-50 rounded-md border border-green-200">
+                    <div className="flex">
+                        <div className="flex-shrink-0">
+                            <svg className="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <div className="ml-3">
+                            <p className="text-sm font-medium text-green-800">{success}</p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
-                        {userData?.bmi && (
-                            <div className="mt-6 border-t border-gray-200 pt-4">
-                                <h4 className="text-sm font-medium text-gray-500">Current BMI</h4>
-                                <p className="mt-1 text-lg font-semibold text-gray-900">
-                                    {userData.bmi.toFixed(1)}
+            {error && (
+                <div className="mb-6 p-4 bg-red-50 rounded-md border border-red-200">
+                    <div className="flex">
+                        <div className="flex-shrink-0">
+                            <AlertCircle className="h-5 w-5 text-red-400" />
+                        </div>
+                        <div className="ml-3">
+                            <p className="text-sm font-medium text-red-800">{error}</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="bg-white shadow rounded-lg overflow-hidden">
+                <form onSubmit={handleSubmit}>
+                    <div className="p-6 border-b border-gray-200">
+                        <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                            <User className="mr-2 h-5 w-5 text-indigo-500" />
+                            Personal Information
+                        </h2>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Full Name
+                                </label>
+                                <input
+                                    type="text"
+                                    id="name"
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleChange}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Email Address
+                                </label>
+                                <input
+                                    type="email"
+                                    id="email"
+                                    name="email"
+                                    value={formData.email}
+                                    disabled
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-500 cursor-not-allowed"
+                                />
+                                <p className="mt-1 text-xs text-gray-500">Email cannot be changed</p>
+                            </div>
+
+                            <div>
+                                <label htmlFor="age" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Age
+                                </label>
+                                <input
+                                    type="number"
+                                    id="age"
+                                    name="age"
+                                    value={formData.age}
+                                    onChange={handleNumberChange}
+                                    min="1"
+                                    max="120"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Gender
+                                </label>
+                                <select
+                                    id="gender"
+                                    name="gender"
+                                    value={formData.gender}
+                                    onChange={handleChange}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                >
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="p-6 border-b border-gray-200">
+                        <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                            <svg className="mr-2 h-5 w-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            Body Measurements
+                        </h2>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label htmlFor="height" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Height (cm)
+                                </label>
+                                <input
+                                    type="number"
+                                    id="height"
+                                    name="height"
+                                    value={formData.height}
+                                    onChange={handleNumberChange}
+                                    min="1"
+                                    max="300"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="weight" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Weight (kg)
+                                </label>
+                                <input
+                                    type="number"
+                                    id="weight"
+                                    name="weight"
+                                    value={formData.weight}
+                                    onChange={handleNumberChange}
+                                    min="1"
+                                    max="500"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                />
+                            </div>
+                        </div>
+
+                        {formData.height && formData.weight && (
+                            <div className="mt-4 p-3 bg-indigo-50 rounded-md">
+                                <p className="text-sm text-indigo-800">
+                                    BMI: <span className="font-semibold">
+                                        {(Number(formData.weight) / Math.pow(Number(formData.height) / 100, 2)).toFixed(1)}
+                                    </span>
                                 </p>
-                                <p className={`text-sm ${userData.bmi < 18.5 ? 'text-blue-600' :
-                                    userData.bmi < 25 ? 'text-green-600' :
-                                        userData.bmi < 30 ? 'text-yellow-600' :
-                                            'text-red-600'
-                                    }`}>
-                                    {getBMICategory(userData.bmi)}
-                                </p>
+                            </div>
+                        )}
+                    </div>
 
-                                <div className="mt-4">
-                                    <h4 className="text-sm font-medium text-gray-500">Current Goal</h4>
-                                    <p className="mt-1 text-sm font-medium text-indigo-600">
-                                        {userData.goalType === 'weight_loss' && 'Weight Loss'}
-                                        {userData.goalType === 'weight_gain' && 'Weight Gain'}
-                                        {userData.goalType === 'maintain' && 'Maintain Weight'}
-                                    </p>
+                    <div className="p-6 border-b border-gray-200">
+                        <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                            <svg className="mr-2 h-5 w-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            Dietary Preferences
+                        </h2>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label htmlFor="goalType" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Fitness Goal
+                                </label>
+                                <select
+                                    id="goalType"
+                                    name="goalType"
+                                    value={formData.goalType}
+                                    onChange={handleChange}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                >
+                                    <option value="weight_loss">Weight Loss</option>
+                                    <option value="weight_gain">Weight Gain</option>
+                                    <option value="maintain">Maintain Weight</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label htmlFor="dietaryPreference" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Dietary Preference
+                                </label>
+                                <select
+                                    id="dietaryPreference"
+                                    name="dietaryPreference"
+                                    value={formData.dietaryPreference}
+                                    onChange={handleChange}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                >
+                                    <option value="non-vegetarian">Non-Vegetarian</option>
+                                    <option value="vegetarian">Vegetarian</option>
+                                    <option value="vegan">Vegan</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label htmlFor="activityLevel" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Activity Level
+                                </label>
+                                <select
+                                    id="activityLevel"
+                                    name="activityLevel"
+                                    value={formData.activityLevel}
+                                    onChange={handleChange}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                >
+                                    <option value="sedentary">Sedentary (little or no exercise)</option>
+                                    <option value="light">Light (light exercise 1-3 days/week)</option>
+                                    <option value="moderate">Moderate (moderate exercise 3-5 days/week)</option>
+                                    <option value="active">Active (hard exercise 6-7 days/week)</option>
+                                    <option value="very_active">Very Active (very hard exercise & physical job)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Food Allergies
+                                </label>
+                                <div className="flex">
+                                    <input
+                                        type="text"
+                                        value={allergyInput}
+                                        onChange={(e) => setAllergyInput(e.target.value)}
+                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                        placeholder="E.g., peanuts, shellfish"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={addAllergy}
+                                        className="px-4 py-2 bg-indigo-600 text-white font-medium rounded-r-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                    >
+                                        Add
+                                    </button>
                                 </div>
 
-                                {userData.dietaryPreference && (
-                                    <div className="mt-4">
-                                        <h4 className="text-sm font-medium text-gray-500">Dietary Preference</h4>
-                                        <p className="mt-1 text-sm font-medium text-indigo-600 capitalize">
-                                            {userData.dietaryPreference}
-                                        </p>
+                                {formData.allergies.length > 0 && (
+                                    <div className="mt-2 flex flex-wrap gap-2">
+                                        {formData.allergies.map((allergy, index) => (
+                                            <span
+                                                key={index}
+                                                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
+                                            >
+                                                {allergy}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeAllergy(index)}
+                                                    className="ml-1.5 inline-flex text-indigo-400 hover:text-indigo-600 focus:outline-none"
+                                                >
+                                                    <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path
+                                                            fillRule="evenodd"
+                                                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                                            clipRule="evenodd"
+                                                        />
+                                                    </svg>
+                                                </button>
+                                            </span>
+                                        ))}
                                     </div>
                                 )}
                             </div>
-                        )}
+                        </div>
                     </div>
 
-                    <div className="mt-5 md:mt-0 md:col-span-2">
-                        {error && (
-                            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-                                {error}
-                            </div>
-                        )}
-
-                        {success && (
-                            <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
-                                Profile updated successfully!
-                            </div>
-                        )}
-
-                        <form onSubmit={handleSubmit}>
-                            <div className="grid grid-cols-6 gap-6">
-                                <div className="col-span-6 sm:col-span-3">
-                                    <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                                        Name
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="name"
-                                        id="name"
-                                        value={formData.name}
-                                        onChange={handleInputChange}
-                                        className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                                        required
-                                    />
-                                </div>
-
-                                <div className="col-span-6 sm:col-span-3">
-                                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                                        Email
-                                    </label>
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        id="email"
-                                        value={formData.email}
-                                        onChange={handleInputChange}
-                                        className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                                        required
-                                    />
-                                </div>
-
-                                <div className="col-span-6 sm:col-span-3">
-                                    <label htmlFor="height" className="block text-sm font-medium text-gray-700">
-                                        Height (cm)
-                                    </label>
-                                    <input
-                                        type="number"
-                                        name="height"
-                                        id="height"
-                                        value={formData.height}
-                                        onChange={handleInputChange}
-                                        className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                                        step="0.1"
-                                        min="1"
-                                        required
-                                    />
-                                </div>
-
-                                <div className="col-span-6 sm:col-span-3">
-                                    <label htmlFor="weight" className="block text-sm font-medium text-gray-700">
-                                        Weight (kg)
-                                    </label>
-                                    <input
-                                        type="number"
-                                        name="weight"
-                                        id="weight"
-                                        value={formData.weight}
-                                        onChange={handleInputChange}
-                                        className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                                        step="0.1"
-                                        min="1"
-                                        required
-                                    />
-                                </div>
-
-                                <div className="col-span-6 sm:col-span-3">
-                                    <label htmlFor="age" className="block text-sm font-medium text-gray-700">
-                                        Age
-                                    </label>
-                                    <input
-                                        type="number"
-                                        name="age"
-                                        id="age"
-                                        value={formData.age}
-                                        onChange={handleInputChange}
-                                        className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                                        min="1"
-                                    />
-                                </div>
-
-                                <div className="col-span-6 sm:col-span-3">
-                                    <label htmlFor="gender" className="block text-sm font-medium text-gray-700">
-                                        Gender
-                                    </label>
-                                    <select
-                                        id="gender"
-                                        name="gender"
-                                        value={formData.gender}
-                                        onChange={handleInputChange}
-                                        className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                    >
-                                        <option value="">Select gender</option>
-                                        <option value="male">Male</option>
-                                        <option value="female">Female</option>
-                                        <option value="other">Other</option>
-                                    </select>
-                                </div>
-
-                                <div className="col-span-6 sm:col-span-3">
-                                    <label htmlFor="dietaryPreference" className="block text-sm font-medium text-gray-700">
-                                        Dietary Preference
-                                    </label>
-                                    <select
-                                        id="dietaryPreference"
-                                        name="dietaryPreference"
-                                        value={formData.dietaryPreference}
-                                        onChange={handleInputChange}
-                                        className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                    >
-                                        <option value="">Select preference</option>
-                                        <option value="vegetarian">Vegetarian</option>
-                                        <option value="non-vegetarian">Non-Vegetarian</option>
-                                        <option value="vegan">Vegan</option>
-                                    </select>
-                                </div>
-
-                                <div className="col-span-6 sm:col-span-3">
-                                    <label htmlFor="activityLevel" className="block text-sm font-medium text-gray-700">
-                                        Activity Level
-                                    </label>
-                                    <select
-                                        id="activityLevel"
-                                        name="activityLevel"
-                                        value={formData.activityLevel}
-                                        onChange={handleInputChange}
-                                        className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                    >
-                                        <option value="">Select activity level</option>
-                                        <option value="sedentary">Sedentary (little to no exercise)</option>
-                                        <option value="light">Light (exercise 1-3 days/week)</option>
-                                        <option value="moderate">Moderate (exercise 3-5 days/week)</option>
-                                        <option value="active">Active (exercise 6-7 days/week)</option>
-                                        <option value="very_active">Very Active (intense exercise daily)</option>
-                                    </select>
-                                </div>
-
-                                <div className="col-span-6">
-                                    <label className="block text-sm font-medium text-gray-700">Allergies</label>
-                                    <div className="mt-2 grid grid-cols-2 gap-2">
-                                        {['Dairy', 'Nuts', 'Gluten', 'Shellfish', 'Eggs', 'Soy'].map((allergy) => (
-                                            <div key={allergy} className="flex items-center">
-                                                <input
-                                                    type="checkbox"
-                                                    id={`allergy-${allergy}`}
-                                                    checked={formData.allergies.includes(allergy)}
-                                                    onChange={() => handleAllergyChange(allergy)}
-                                                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                                                />
-                                                <label htmlFor={`allergy-${allergy}`} className="ml-2 text-sm text-gray-700">
-                                                    {allergy}
-                                                </label>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="mt-6">
-                                <button
-                                    type="submit"
-                                    className="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                                    disabled={saving}
-                                >
-                                    {saving ? 'Saving...' : 'Save Profile'}
-                                </button>
-                            </div>
-                        </form>
+                    <div className="px-6 py-4 bg-gray-50 text-right">
+                        <button
+                            type="submit"
+                            disabled={saving}
+                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                        >
+                            {saving ? (
+                                <>
+                                    <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                                    Saving...
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="-ml-1 mr-2 h-4 w-4" />
+                                    Save Changes
+                                </>
+                            )}
+                        </button>
                     </div>
-                </div>
+                </form>
             </div>
         </div>
     );

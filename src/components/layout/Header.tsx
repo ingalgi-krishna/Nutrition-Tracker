@@ -5,7 +5,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/Providers/AuthProvider';
-import { User, LogOut, ChevronDown, Menu, X, BarChart2, Apple, List, Home } from 'lucide-react';
+import { User, LogOut, ChevronDown, Menu, X, BarChart2, Apple, List, Home, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Header: React.FC = () => {
@@ -79,8 +79,15 @@ const Header: React.FC = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16">
                     <div className="flex">
-                        <Link href={user ? "/dashboard" : "/"} className="flex-shrink-0 flex items-center" onClick={closeMenu}>
-                            <span className="text-xl font-extrabold text-[#010100]">
+                        <Link
+                            href={user ? "/dashboard" : "/"}
+                            className="flex-shrink-0 flex items-center space-x-2 group"
+                            onClick={closeMenu}
+                        >
+                            <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#ABD483] to-[#8BAA7C] flex items-center justify-center shadow-sm">
+                                <Heart className="h-4 w-4 text-white" />
+                            </span>
+                            <span className="text-xl font-extrabold text-[#010100] group-hover:opacity-90 transition-opacity">
                                 Kcalculate<span className="text-[#FC842D]">AI</span>
                             </span>
                         </Link>

@@ -3,7 +3,23 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/components/Providers/AuthProvider';
-import { Loader2, Save, User, AlertCircle } from 'lucide-react';
+import {
+    Loader2,
+    Save,
+    User,
+    AlertTriangle,
+    Scale,
+    Activity,
+    Utensils,
+    Heart,
+    Clock,
+    Leaf,
+    Apple,
+    ChevronsUp,
+    Award,
+    Ban
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface ProfileFormData {
     name: string;
@@ -17,6 +33,26 @@ interface ProfileFormData {
     allergies: string[];
     activityLevel: string;
 }
+
+// Animation variants
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1
+        }
+    }
+};
+
+const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+        y: 0,
+        opacity: 1,
+        transition: { duration: 0.5 }
+    }
+};
 
 export default function Profile() {
     const { user } = useAuth();
@@ -37,6 +73,32 @@ export default function Profile() {
         activityLevel: 'moderate',
     });
     const [allergyInput, setAllergyInput] = useState('');
+    const [bmi, setBmi] = useState<number | null>(null);
+    const [bmiCategory, setBmiCategory] = useState<string>('');
+
+    // Calculate BMI
+    useEffect(() => {
+        if (formData.height && formData.weight) {
+            const heightInMeters = Number(formData.height) / 100;
+            const weightInKg = Number(formData.weight);
+            const calculatedBmi = weightInKg / (heightInMeters * heightInMeters);
+            setBmi(calculatedBmi);
+
+            // Set BMI category
+            if (calculatedBmi < 18.5) {
+                setBmiCategory('Underweight');
+            } else if (calculatedBmi < 24.9) {
+                setBmiCategory('Normal weight');
+            } else if (calculatedBmi < 29.9) {
+                setBmiCategory('Overweight');
+            } else {
+                setBmiCategory('Obese');
+            }
+        } else {
+            setBmi(null);
+            setBmiCategory('');
+        }
+    }, [formData.height, formData.weight]);
 
     // Fetch user data
     useEffect(() => {
@@ -159,54 +221,122 @@ export default function Profile() {
         }
     };
 
+    // Get activity level icon
+    const getActivityIcon = (level: string) => {
+        switch (level) {
+            case 'sedentary': return <Clock className="h-5 w-5 text-gray-500" />;
+            case 'light': return <Activity className="h-5 w-5 text-blue-400" />;
+            case 'moderate': return <Activity className="h-5 w-5 text-green-500" />;
+            case 'active': return <Activity className="h-5 w-5 text-orange-500" />;
+            case 'very_active': return <ChevronsUp className="h-5 w-5 text-red-500" />;
+            default: return <Activity className="h-5 w-5 text-green-500" />;
+        }
+    };
+
+    // Get goal type icon
+    const getGoalIcon = (goalType: string) => {
+        switch (goalType) {
+            case 'weight_loss': return <Activity className="h-5 w-5 text-red-500" />;
+            case 'weight_gain': return <ChevronsUp className="h-5 w-5 text-blue-500" />;
+            case 'maintain': return <Heart className="h-5 w-5 text-green-500" />;
+            default: return <Heart className="h-5 w-5 text-green-500" />;
+        }
+    };
+
+    // Get dietary preference icon
+    const getDietIcon = (preference: string) => {
+        switch (preference) {
+            case 'vegetarian': return <Leaf className="h-5 w-5 text-green-500" />;
+            case 'vegan': return <Leaf className="h-5 w-5 text-green-600" />;
+            case 'non-vegetarian': return <Utensils className="h-5 w-5 text-orange-500" />;
+            default: return <Utensils className="h-5 w-5 text-orange-500" />;
+        }
+    };
+
     if (loading) {
         return (
-            <div className="flex justify-center items-center min-h-screen">
-                <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+            <div className="flex justify-center items-center min-h-[60vh] bg-[#FEFEFF] font-DM_Sans">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-center p-8 max-w-md"
+                >
+                    <div className="relative">
+                        <div className="w-20 h-20 rounded-full bg-[#ABD483]/20 mx-auto mb-6 flex items-center justify-center">
+                            <Loader2 className="animate-spin h-10 w-10 text-[#8BAA7C]" />
+                        </div>
+                        <div className="absolute -top-2 -right-2 w-8 h-8 bg-[#FC842D] rounded-full flex items-center justify-center">
+                            <User className="h-4 w-4 text-white" />
+                        </div>
+                    </div>
+                    <h2 className="text-2xl font-bold text-[#010100] mb-3">Loading Your Profile</h2>
+                    <p className="text-gray-600 mb-6">
+                        Please wait while we retrieve your profile information.
+                    </p>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5">
+                        <motion.div
+                            initial={{ width: "0%" }}
+                            animate={{ width: "100%" }}
+                            transition={{ duration: 2.5 }}
+                            className="h-full bg-gradient-to-r from-[#ABD483] to-[#8BAA7C] rounded-full"
+                        ></motion.div>
+                    </div>
+                </motion.div>
             </div>
         );
     }
 
     return (
-        <div className="container mx-auto px-4 py-8 max-w-4xl">
-            <div className="mb-6">
-                <h1 className="text-3xl font-bold text-gray-900">Profile Settings</h1>
-                <p className="mt-2 text-gray-600">Update your personal information and preferences</p>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 font-DM_Sans bg-[#FEFEFF]">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+                <div>
+                    <h1 className="text-3xl font-bold text-[#010100]">
+                        Your Profile
+                    </h1>
+                    <p className="text-gray-600 mt-1">
+                        Update your personal information and preferences for better nutrition recommendations
+                    </p>
+                </div>
             </div>
 
-            {success && (
-                <div className="mb-6 p-4 bg-green-50 rounded-md border border-green-200">
-                    <div className="flex">
-                        <div className="flex-shrink-0">
-                            <svg className="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                            </svg>
-                        </div>
-                        <div className="ml-3">
-                            <p className="text-sm font-medium text-green-800">{success}</p>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <AnimatePresence>
+                {success && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="mb-6 p-4 bg-[#ABD483]/10 rounded-lg border border-[#ABD483]/30 flex items-center"
+                    >
+                        <Award className="h-5 w-5 text-[#8BAA7C] mr-3 flex-shrink-0" />
+                        <p className="text-sm font-medium text-[#8BAA7C]">{success}</p>
+                    </motion.div>
+                )}
 
-            {error && (
-                <div className="mb-6 p-4 bg-red-50 rounded-md border border-red-200">
-                    <div className="flex">
-                        <div className="flex-shrink-0">
-                            <AlertCircle className="h-5 w-5 text-red-400" />
-                        </div>
-                        <div className="ml-3">
-                            <p className="text-sm font-medium text-red-800">{error}</p>
-                        </div>
-                    </div>
-                </div>
-            )}
+                {error && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="mb-6 p-4 bg-red-50 rounded-lg border border-red-200 flex items-center"
+                    >
+                        <AlertTriangle className="h-5 w-5 text-red-500 mr-3 flex-shrink-0" />
+                        <p className="text-sm font-medium text-red-800">{error}</p>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-            <div className="bg-white shadow rounded-lg overflow-hidden">
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-xl shadow-sm border border-[#ABD483]/20"
+            >
                 <form onSubmit={handleSubmit}>
-                    <div className="p-6 border-b border-gray-200">
-                        <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-                            <User className="mr-2 h-5 w-5 text-indigo-500" />
+                    {/* Personal Information Section */}
+                    <div className="p-6 border-b border-[#ABD483]/10">
+                        <h2 className="text-xl font-bold text-[#010100] mb-4 flex items-center">
+                            <div className="w-8 h-8 rounded-full bg-[#ABD483]/20 mr-3 flex items-center justify-center">
+                                <User className="h-4 w-4 text-[#8BAA7C]" />
+                            </div>
                             Personal Information
                         </h2>
 
@@ -221,7 +351,7 @@ export default function Profile() {
                                     name="name"
                                     value={formData.name}
                                     onChange={handleChange}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                    className="w-full px-3 py-2 border border-[#ABD483]/20 rounded-lg shadow-sm focus:outline-none focus:ring-[#8BAA7C] focus:border-[#8BAA7C]"
                                     required
                                 />
                             </div>
@@ -236,7 +366,7 @@ export default function Profile() {
                                     name="email"
                                     value={formData.email}
                                     disabled
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-500 cursor-not-allowed"
+                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm bg-gray-50 text-gray-500 cursor-not-allowed"
                                 />
                                 <p className="mt-1 text-xs text-gray-500">Email cannot be changed</p>
                             </div>
@@ -253,7 +383,7 @@ export default function Profile() {
                                     onChange={handleNumberChange}
                                     min="1"
                                     max="120"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                    className="w-full px-3 py-2 border border-[#ABD483]/20 rounded-lg shadow-sm focus:outline-none focus:ring-[#8BAA7C] focus:border-[#8BAA7C]"
                                 />
                             </div>
 
@@ -266,7 +396,7 @@ export default function Profile() {
                                     name="gender"
                                     value={formData.gender}
                                     onChange={handleChange}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                    className="w-full px-3 py-2 border border-[#ABD483]/20 rounded-lg shadow-sm focus:outline-none focus:ring-[#8BAA7C] focus:border-[#8BAA7C]"
                                 >
                                     <option value="male">Male</option>
                                     <option value="female">Female</option>
@@ -276,11 +406,12 @@ export default function Profile() {
                         </div>
                     </div>
 
-                    <div className="p-6 border-b border-gray-200">
-                        <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-                            <svg className="mr-2 h-5 w-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
+                    {/* Body Measurements Section */}
+                    <div className="p-6 border-b border-[#ABD483]/10">
+                        <h2 className="text-xl font-bold text-[#010100] mb-4 flex items-center">
+                            <div className="w-8 h-8 rounded-full bg-[#ABD483]/20 mr-3 flex items-center justify-center">
+                                <Scale className="h-4 w-4 text-[#8BAA7C]" />
+                            </div>
                             Body Measurements
                         </h2>
 
@@ -297,7 +428,7 @@ export default function Profile() {
                                     onChange={handleNumberChange}
                                     min="1"
                                     max="300"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                    className="w-full px-3 py-2 border border-[#ABD483]/20 rounded-lg shadow-sm focus:outline-none focus:ring-[#8BAA7C] focus:border-[#8BAA7C]"
                                 />
                             </div>
 
@@ -313,27 +444,66 @@ export default function Profile() {
                                     onChange={handleNumberChange}
                                     min="1"
                                     max="500"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                    className="w-full px-3 py-2 border border-[#ABD483]/20 rounded-lg shadow-sm focus:outline-none focus:ring-[#8BAA7C] focus:border-[#8BAA7C]"
                                 />
                             </div>
                         </div>
 
-                        {formData.height && formData.weight && (
-                            <div className="mt-4 p-3 bg-indigo-50 rounded-md">
-                                <p className="text-sm text-indigo-800">
-                                    BMI: <span className="font-semibold">
-                                        {(Number(formData.weight) / Math.pow(Number(formData.height) / 100, 2)).toFixed(1)}
-                                    </span>
+                        {bmi !== null && (
+                            <div className="mt-4 p-4 bg-gradient-to-r from-[#8BAA7C]/10 to-[#ABD483]/10 rounded-xl border border-[#ABD483]/20">
+                                <h3 className="font-bold text-[#010100] mb-2 flex items-center">
+                                    <div className="w-6 h-6 rounded-full bg-[#ABD483]/20 mr-2 flex items-center justify-center">
+                                        <Activity className="h-3 w-3 text-[#8BAA7C]" />
+                                    </div>
+                                    Body Mass Index (BMI)
+                                </h3>
+
+                                <div className="flex flex-col md:flex-row md:items-center gap-4">
+                                    <div className="flex-1">
+                                        <div className="w-full bg-gray-100 rounded-full h-2.5 mb-2">
+                                            <div
+                                                className={`h-2.5 rounded-full ${bmi < 18.5 ? 'bg-blue-400' :
+                                                    bmi < 24.9 ? 'bg-green-400' :
+                                                        bmi < 29.9 ? 'bg-orange-400' : 'bg-red-400'
+                                                    }`}
+                                                style={{ width: `${Math.min(100, (bmi / 40) * 100)}%` }}
+                                            ></div>
+                                        </div>
+                                        <div className="flex justify-between text-xs text-gray-500">
+                                            <span>Underweight</span>
+                                            <span>Normal</span>
+                                            <span>Overweight</span>
+                                            <span>Obese</span>
+                                        </div>
+                                    </div>
+                                    <div className="bg-white p-3 rounded-lg shadow-sm border border-[#ABD483]/10 flex gap-4 items-center">
+                                        <div className="text-center">
+                                            <div className="text-sm text-gray-500">Your BMI</div>
+                                            <div className="font-bold text-[#010100] text-lg">{bmi.toFixed(1)}</div>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="text-sm text-gray-500">Category</div>
+                                            <div className={`font-bold text-sm ${bmi < 18.5 ? 'text-blue-500' :
+                                                bmi < 24.9 ? 'text-green-500' :
+                                                    bmi < 29.9 ? 'text-orange-500' : 'text-red-500'
+                                                }`}>{bmiCategory}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <p className="mt-2 text-sm text-gray-600">
+                                    BMI is a measure of body fat based on height and weight. It's used to screen for weight categories that may lead to health problems.
                                 </p>
                             </div>
                         )}
                     </div>
 
-                    <div className="p-6 border-b border-gray-200">
-                        <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-                            <svg className="mr-2 h-5 w-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                            </svg>
+                    {/* Dietary Preferences Section */}
+                    <div className="p-6 border-b border-[#ABD483]/10">
+                        <h2 className="text-xl font-bold text-[#010100] mb-4 flex items-center">
+                            <div className="w-8 h-8 rounded-full bg-[#ABD483]/20 mr-3 flex items-center justify-center">
+                                <Utensils className="h-4 w-4 text-[#8BAA7C]" />
+                            </div>
                             Dietary Preferences
                         </h2>
 
@@ -342,34 +512,83 @@ export default function Profile() {
                                 <label htmlFor="goalType" className="block text-sm font-medium text-gray-700 mb-1">
                                     Fitness Goal
                                 </label>
-                                <select
-                                    id="goalType"
-                                    name="goalType"
-                                    value={formData.goalType}
-                                    onChange={handleChange}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                                >
-                                    <option value="weight_loss">Weight Loss</option>
-                                    <option value="weight_gain">Weight Gain</option>
-                                    <option value="maintain">Maintain Weight</option>
-                                </select>
+                                <div className="flex flex-col space-y-2">
+                                    {['weight_loss', 'maintain', 'weight_gain'].map((goal) => (
+                                        <label
+                                            key={goal}
+                                            className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${formData.goalType === goal
+                                                ? 'border-[#8BAA7C] bg-[#8BAA7C]/10'
+                                                : 'border-gray-200 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            <input
+                                                type="radio"
+                                                name="goalType"
+                                                value={goal}
+                                                checked={formData.goalType === goal}
+                                                onChange={handleChange}
+                                                className="sr-only"
+                                            />
+                                            <div className="w-6 h-6 rounded-full flex items-center justify-center mr-3">
+                                                {goal === 'weight_loss' && <Activity className="h-5 w-5 text-red-500" />}
+                                                {goal === 'maintain' && <Heart className="h-5 w-5 text-green-500" />}
+                                                {goal === 'weight_gain' && <ChevronsUp className="h-5 w-5 text-blue-500" />}
+                                            </div>
+                                            <div className="flex-1">
+                                                <span className="font-medium text-[#010100]">
+                                                    {goal === 'weight_loss' ? 'Weight Loss' :
+                                                        goal === 'weight_gain' ? 'Weight Gain' : 'Maintain Weight'}
+                                                </span>
+                                            </div>
+                                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${formData.goalType === goal ? 'border-[#8BAA7C]' : 'border-gray-300'
+                                                }`}>
+                                                {formData.goalType === goal && (
+                                                    <div className="w-2 h-2 rounded-full bg-[#8BAA7C]"></div>
+                                                )}
+                                            </div>
+                                        </label>
+                                    ))}
+                                </div>
                             </div>
 
                             <div>
                                 <label htmlFor="dietaryPreference" className="block text-sm font-medium text-gray-700 mb-1">
                                     Dietary Preference
                                 </label>
-                                <select
-                                    id="dietaryPreference"
-                                    name="dietaryPreference"
-                                    value={formData.dietaryPreference}
-                                    onChange={handleChange}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                                >
-                                    <option value="non-vegetarian">Non-Vegetarian</option>
-                                    <option value="vegetarian">Vegetarian</option>
-                                    <option value="vegan">Vegan</option>
-                                </select>
+                                <div className="flex flex-col space-y-2">
+                                    {['non-vegetarian', 'vegetarian', 'vegan'].map((diet) => (
+                                        <label
+                                            key={diet}
+                                            className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${formData.dietaryPreference === diet
+                                                ? 'border-[#8BAA7C] bg-[#8BAA7C]/10'
+                                                : 'border-gray-200 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            <input
+                                                type="radio"
+                                                name="dietaryPreference"
+                                                value={diet}
+                                                checked={formData.dietaryPreference === diet}
+                                                onChange={handleChange}
+                                                className="sr-only"
+                                            />
+                                            <div className="w-6 h-6 rounded-full flex items-center justify-center mr-3">
+                                                {diet === 'non-vegetarian' && <Utensils className="h-5 w-5 text-orange-500" />}
+                                                {diet === 'vegetarian' && <Leaf className="h-5 w-5 text-green-500" />}
+                                                {diet === 'vegan' && <Leaf className="h-5 w-5 text-green-600" />}
+                                            </div>
+                                            <div className="flex-1">
+                                                <span className="font-medium text-[#010100] capitalize">{diet}</span>
+                                            </div>
+                                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${formData.dietaryPreference === diet ? 'border-[#8BAA7C]' : 'border-gray-300'
+                                                }`}>
+                                                {formData.dietaryPreference === diet && (
+                                                    <div className="w-2 h-2 rounded-full bg-[#8BAA7C]"></div>
+                                                )}
+                                            </div>
+                                        </label>
+                                    ))}
+                                </div>
                             </div>
 
                             <div>
@@ -381,7 +600,7 @@ export default function Profile() {
                                     name="activityLevel"
                                     value={formData.activityLevel}
                                     onChange={handleChange}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                    className="w-full px-3 py-2 border border-[#ABD483]/20 rounded-lg shadow-sm focus:outline-none focus:ring-[#8BAA7C] focus:border-[#8BAA7C]"
                                 >
                                     <option value="sedentary">Sedentary (little or no exercise)</option>
                                     <option value="light">Light (light exercise 1-3 days/week)</option>
@@ -389,6 +608,14 @@ export default function Profile() {
                                     <option value="active">Active (hard exercise 6-7 days/week)</option>
                                     <option value="very_active">Very Active (very hard exercise & physical job)</option>
                                 </select>
+                                <div className="mt-2 flex items-center">
+                                    <div className="w-4 h-4 mr-1.5">
+                                        {getActivityIcon(formData.activityLevel)}
+                                    </div>
+                                    <p className="text-xs text-gray-600">
+                                        Your activity level helps us calculate your daily calorie needs.
+                                    </p>
+                                </div>
                             </div>
 
                             <div>
@@ -400,30 +627,31 @@ export default function Profile() {
                                         type="text"
                                         value={allergyInput}
                                         onChange={(e) => setAllergyInput(e.target.value)}
-                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                                        className="flex-1 px-3 py-2 border border-[#ABD483]/20 rounded-l-lg shadow-sm focus:outline-none focus:ring-[#8BAA7C] focus:border-[#8BAA7C]"
                                         placeholder="E.g., peanuts, shellfish"
                                     />
                                     <button
                                         type="button"
                                         onClick={addAllergy}
-                                        className="px-4 py-2 bg-indigo-600 text-white font-medium rounded-r-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                        className="px-4 py-2 bg-[#8BAA7C] text-white font-medium rounded-r-lg hover:bg-[#8BAA7C]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#8BAA7C]"
                                     >
                                         Add
                                     </button>
                                 </div>
 
-                                {formData.allergies.length > 0 && (
-                                    <div className="mt-2 flex flex-wrap gap-2">
+                                {formData.allergies.length > 0 ? (
+                                    <div className="mt-3 flex flex-wrap gap-2">
                                         {formData.allergies.map((allergy, index) => (
                                             <span
                                                 key={index}
-                                                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
+                                                className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-100"
                                             >
+                                                <Ban className="h-3 w-3 mr-1 text-red-500" />
                                                 {allergy}
                                                 <button
                                                     type="button"
                                                     onClick={() => removeAllergy(index)}
-                                                    className="ml-1.5 inline-flex text-indigo-400 hover:text-indigo-600 focus:outline-none"
+                                                    className="ml-1.5 text-red-400 hover:text-red-600 focus:outline-none"
                                                 >
                                                     <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
                                                         <path
@@ -436,32 +664,92 @@ export default function Profile() {
                                             </span>
                                         ))}
                                     </div>
+                                ) : (
+                                    <p className="mt-2 text-xs text-gray-600 flex items-center">
+                                        <Ban className="h-3 w-3 mr-1 text-gray-400" />
+                                        No allergies added yet. Your recommendations will include all foods.
+                                    </p>
                                 )}
                             </div>
                         </div>
                     </div>
 
-                    <div className="px-6 py-4 bg-gray-50 text-right">
+                    {/* Nutritional Impact Section */}
+                    <div className="p-6 bg-gradient-to-r from-[#8BAA7C]/5 to-[#ABD483]/10 border-b border-[#ABD483]/10">
+                        <h2 className="text-xl font-bold text-[#010100] mb-4 flex items-center">
+                            <div className="w-8 h-8 rounded-full bg-[#ABD483]/20 mr-3 flex items-center justify-center">
+                                <Apple className="h-4 w-4 text-[#8BAA7C]" />
+                            </div>
+                            How This Affects Your Nutrition Plan
+                        </h2>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="bg-white p-4 rounded-lg shadow-sm border border-[#ABD483]/20">
+                                <div className="flex items-center mb-2">
+                                    {getGoalIcon(formData.goalType)}
+                                    <h3 className="ml-2 font-bold text-[#010100]">Goal Impact</h3>
+                                </div>
+                                <p className="text-sm text-gray-700">
+                                    {formData.goalType === 'weight_loss'
+                                        ? 'Your calorie recommendations will be reduced to create a deficit for weight loss.'
+                                        : formData.goalType === 'weight_gain'
+                                            ? 'Your calorie recommendations will be increased to support muscle growth and weight gain.'
+                                            : 'Your calorie recommendations will match your maintenance needs to sustain your current weight.'}
+                                </p>
+                            </div>
+
+                            <div className="bg-white p-4 rounded-lg shadow-sm border border-[#ABD483]/20">
+                                <div className="flex items-center mb-2">
+                                    {getDietIcon(formData.dietaryPreference)}
+                                    <h3 className="ml-2 font-bold text-[#010100]">Dietary Impact</h3>
+                                </div>
+                                <p className="text-sm text-gray-700">
+                                    {formData.dietaryPreference === 'vegetarian'
+                                        ? 'Your food recommendations will exclude meat but include dairy and eggs.'
+                                        : formData.dietaryPreference === 'vegan'
+                                            ? 'Your food recommendations will exclude all animal products.'
+                                            : 'Your food recommendations will include all food types for a balanced diet.'}
+                                </p>
+                            </div>
+
+                            <div className="bg-white p-4 rounded-lg shadow-sm border border-[#ABD483]/20">
+                                <div className="flex items-center mb-2">
+                                    {getActivityIcon(formData.activityLevel)}
+                                    <h3 className="ml-2 font-bold text-[#010100]">Activity Impact</h3>
+                                </div>
+                                <p className="text-sm text-gray-700">
+                                    {formData.activityLevel === 'sedentary'
+                                        ? 'Your lower activity level means your calorie needs will be reduced accordingly.'
+                                        : formData.activityLevel === 'very_active' || formData.activityLevel === 'active'
+                                            ? 'Your high activity level means your calorie and protein needs will be increased to support recovery.'
+                                            : 'Your moderate activity level will be factored into a balanced nutrition plan.'}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Form Actions */}
+                    <div className="p-6 bg-gray-50 rounded-b-xl text-right">
                         <button
                             type="submit"
                             disabled={saving}
-                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                            className="inline-flex items-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-[#8BAA7C] hover:bg-[#8BAA7C]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#8BAA7C] disabled:opacity-50 transition-colors"
                         >
                             {saving ? (
                                 <>
-                                    <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
-                                    Saving...
+                                    <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                                    Saving Changes...
                                 </>
                             ) : (
                                 <>
-                                    <Save className="-ml-1 mr-2 h-4 w-4" />
-                                    Save Changes
+                                    <Save className="mr-2 h-4 w-4" />
+                                    Save Profile
                                 </>
                             )}
                         </button>
                     </div>
                 </form>
-            </div>
+            </motion.div>
         </div>
     );
 }

@@ -12,7 +12,7 @@ import {
   BadgeCheck,
   ChevronRight
 } from 'lucide-react';
-
+import Image from 'next/image';
 export default function Home() {
   return (
     <div className="bg-[#FEFEFF] font-DM_Sans">
@@ -73,10 +73,13 @@ export default function Home() {
               className="relative lg:pl-8"
             >
               <div className="relative z-10 bg-white p-3 rounded-2xl shadow-xl overflow-hidden">
-                <img
-                  src="/dashboard.png"
+                <Image
+                  src="/nutrition.jpg"
                   alt="Kcalculate AI in action"
+                  width={300}
+                  height={200}
                   className="w-full h-auto rounded-xl"
+                  priority
                 />
 
                 <motion.div

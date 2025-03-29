@@ -32,6 +32,7 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+    const [cameraFacing, setCameraFacing] = useState<'environment' | 'user'>('environment');
 
     const [formData, setFormData] = useState({
         foodName: '',
@@ -71,6 +72,56 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
         setCurrentEntry(null);
     };
 
+    // Helper function to compress images
+    const compressImage = (dataUrl: string, fileType: string, callback: (result: string) => void) => {
+        const img = new Image();
+        img.onload = () => {
+            // Create a canvas to draw the resized image
+            const canvas = document.createElement('canvas');
+
+            // Set maximum dimensions while maintaining aspect ratio
+            const maxDimension = 1200;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > maxDimension || height > maxDimension) {
+                if (width > height) {
+                    height = (height / width) * maxDimension;
+                    width = maxDimension;
+                } else {
+                    width = (width / height) * maxDimension;
+                    height = maxDimension;
+                }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+
+            // Draw the image on the canvas
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Convert to data URL with reduced quality for JPEGs
+                const mimeType = fileType || 'image/jpeg';
+                const quality = mimeType === 'image/jpeg' || mimeType === 'image/jpg' ? 0.8 : 0.9;
+                const compressedDataUrl = canvas.toDataURL(mimeType, quality);
+
+                callback(compressedDataUrl);
+            } else {
+                // Fallback if canvas context fails
+                callback(dataUrl);
+            }
+        };
+
+        img.onerror = () => {
+            // If there's an error, use the original data URL
+            callback(dataUrl);
+        };
+
+        img.src = dataUrl;
+    };
+
     const handleInputMethodChange = (method: InputMethod) => {
         // Stop camera if active and switching away
         if (inputMethod === 'camera' && method !== 'camera' && cameraStream) {
@@ -85,22 +136,31 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
             startCamera();
         }
     };
-    const startCamera = async () => {
+
+    // Updated startCamera function with camera facing parameter
+    const startCamera = async (facing: 'environment' | 'user' = cameraFacing) => {
         try {
             if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                // Stop any existing camera stream first
+                if (cameraStream) {
+                    cameraStream.getTracks().forEach(track => track.stop());
+                    setCameraStream(null);
+                }
+
                 // Different constraints for mobile vs desktop
                 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
                 const constraints = {
                     video: isMobile
                         ? {
-                            facingMode: { exact: "environment" } // Use back camera on mobile
+                            facingMode: { exact: facing } // Use specified camera on mobile
                         }
-                        : true // Use default (usually front) camera on desktop
+                        : true // Use default camera on desktop
                 };
 
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 setCameraStream(stream);
+                setCameraFacing(facing);
 
                 if (videoRef.current) {
                     videoRef.current.srcObject = stream;
@@ -111,18 +171,34 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
         } catch (err) {
             console.error('Error accessing camera:', err);
 
-            // If environment camera fails on mobile, try again with any camera
+            // If exact facingMode fails, try without 'exact' constraint
             if (err instanceof Error && /facingMode/.test(err.message)) {
                 try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    const fallbackConstraints = {
+                        video: { facingMode: facing } // Try without 'exact'
+                    };
+
+                    const stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
                     setCameraStream(stream);
+                    setCameraFacing(facing);
 
                     if (videoRef.current) {
                         videoRef.current.srcObject = stream;
                     }
                     return;
                 } catch (fallbackErr) {
-                    console.error('Fallback camera also failed:', fallbackErr);
+                    // If that also fails, try any camera
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                        setCameraStream(stream);
+
+                        if (videoRef.current) {
+                            videoRef.current.srcObject = stream;
+                        }
+                        return;
+                    } catch (anyErr) {
+                        console.error('All camera attempts failed:', anyErr);
+                    }
                 }
             }
 
@@ -130,6 +206,12 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
             setInputMethod('manual');
         }
     };
+
+    const toggleCamera = () => {
+        const newFacing = cameraFacing === 'environment' ? 'user' : 'environment';
+        startCamera(newFacing);
+    };
+
 
     const captureImage = () => {
         const video = videoRef.current;
@@ -140,38 +222,73 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
         const context = canvas.getContext('2d');
         if (!context) return;
 
-        // Set canvas dimensions to match video
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        // Set canvas dimensions to match video but ensure reasonable size for API processing
+        const maxDimension = 1200; // Max width or height to avoid huge images
+        let width = video.videoWidth;
+        let height = video.videoHeight;
 
-        // Draw the current video frame on canvas
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        // Convert canvas to data URL and set as preview
-        const dataUrl = canvas.toDataURL('image/jpeg');
-        setImagePreview(dataUrl);
-
-        // Stop camera stream
-        if (cameraStream) {
-            cameraStream.getTracks().forEach(track => track.stop());
-            setCameraStream(null);
+        // Scale down if needed (maintain aspect ratio)
+        if (width > maxDimension || height > maxDimension) {
+            if (width > height) {
+                height = (height / width) * maxDimension;
+                width = maxDimension;
+            } else {
+                width = (width / height) * maxDimension;
+                height = maxDimension;
+            }
         }
 
-        // Analyze the captured image
-        analyzeImage(dataUrl);
+        canvas.width = width;
+        canvas.height = height;
+
+        // Draw the current video frame on canvas with proper scaling
+        context.drawImage(video, 0, 0, width, height);
+
+        try {
+            // Convert canvas to data URL with appropriate quality
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.8); // Use 80% JPEG quality
+            setImagePreview(dataUrl);
+
+            // Stop camera stream
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                setCameraStream(null);
+            }
+
+            // Analyze the captured image
+            analyzeImage(dataUrl);
+        } catch (error) {
+            console.error('Error capturing image:', error);
+            setError('Failed to capture image. Please try again.');
+        }
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
+        // Validate file size before processing
+        const maxSizeMB = 10;
+        if (file.size > maxSizeMB * 1024 * 1024) {
+            setError(`Image is too large. Maximum size is ${maxSizeMB}MB.`);
+            return;
+        }
+
+        // Process the image to ensure it's suitable for analysis
         const reader = new FileReader();
         reader.onload = (event) => {
             if (event.target?.result) {
                 const dataUrl = event.target.result as string;
-                setImagePreview(dataUrl);
-                analyzeImage(dataUrl);
+
+                // Compress the image if necessary
+                compressImage(dataUrl, file.type, (compressedDataUrl) => {
+                    setImagePreview(compressedDataUrl);
+                    analyzeImage(compressedDataUrl);
+                });
             }
+        };
+        reader.onerror = () => {
+            setError('Failed to read the image file. Please try another image.');
         };
         reader.readAsDataURL(file);
     };
@@ -183,18 +300,31 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
         const file = e.dataTransfer.files?.[0];
         if (!file) return;
 
+        // Validate file size
+        const maxSizeMB = 10;
+        if (file.size > maxSizeMB * 1024 * 1024) {
+            setError(`Image is too large. Maximum size is ${maxSizeMB}MB.`);
+            return;
+        }
+
         const reader = new FileReader();
         reader.onload = (event) => {
             if (event.target?.result) {
                 const dataUrl = event.target.result as string;
-                setImagePreview(dataUrl);
-                analyzeImage(dataUrl);
+
+                // Use the same compression function
+                compressImage(dataUrl, file.type, (compressedDataUrl) => {
+                    setImagePreview(compressedDataUrl);
+                    analyzeImage(compressedDataUrl);
+                });
             }
+        };
+        reader.onerror = () => {
+            setError('Failed to read the image file. Please try another image.');
         };
         reader.readAsDataURL(file);
     };
 
-    // Updated analyzeImage function
     // Updated analyzeImage function
     const analyzeImage = async (imageData: string) => {
         // Clear previous data first
@@ -211,6 +341,9 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
         setError('');
 
         try {
+            // Log image data size for debugging (only the length, not the actual content)
+            console.log(`Image data size: ${Math.round(imageData.length / 1024)} KB`);
+
             const response = await fetch('/api/analyze-food', {
                 method: 'POST',
                 headers: {
@@ -221,6 +354,11 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
                     userId: user?.id
                 }),
             });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`API returned ${response.status}: ${errorText}`);
+            }
 
             const result = await response.json();
 
@@ -262,7 +400,7 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
             }
         } catch (err) {
             console.error('Error analyzing image:', err);
-            setError('Error analyzing the image. Please fill the details manually.');
+            setError('Error analyzing the image. Please try with a clearer photo or fill the details manually.');
         } finally {
             setAnalyzing(false);
         }
@@ -416,13 +554,29 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
                             playsInline
                             className="w-full h-full object-cover"
                         />
-                        <button
-                            type="button"
-                            onClick={captureImage}
-                            className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white rounded-full p-3 shadow-lg"
-                        >
-                            <Camera className="h-6 w-6 text-indigo-600" />
-                        </button>
+                        <div className="absolute bottom-4 left-0 right-0 flex justify-center items-center space-x-4">
+                            <button
+                                type="button"
+                                onClick={toggleCamera}
+                                className="bg-white rounded-full p-3 shadow-lg"
+                                aria-label="Switch camera"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-600">
+                                    <path d="M16 3h5v5"></path>
+                                    <path d="M8 21h-5v-5"></path>
+                                    <path d="M21 3l-7 7"></path>
+                                    <path d="M3 21l7-7"></path>
+                                </svg>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={captureImage}
+                                className="bg-white rounded-full p-3 shadow-lg"
+                                aria-label="Take photo"
+                            >
+                                <Camera className="h-6 w-6 text-indigo-600" />
+                            </button>
+                        </div>
                     </div>
                     <canvas ref={canvasRef} className="hidden" />
                 </div>

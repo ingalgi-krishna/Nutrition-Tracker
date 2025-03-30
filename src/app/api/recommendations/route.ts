@@ -89,58 +89,59 @@ export async function GET(request: NextRequest) {
 
     // Prepare the prompt for Gemini
     const prompt = `
-      You are a nutrition expert AI assistant for an app called NutriTrack. You need to recommend personalized food options to the user for their remaining meals today.
-      
-      USER PROFILE:
-      - Height: ${user.height || 'Not specified'} cm
-      - Weight: ${user.weight || 'Not specified'} kg
-      - BMI: ${typeof user.bmi === 'number' ? user.bmi.toFixed(1) : 'Not calculated'} (${bmiCategory})
-      - Goal: ${user.goalType || 'maintain'} (${user.goalType === 'weight_loss' ? 'Lose weight' : user.goalType === 'weight_gain' ? 'Gain weight' : 'Maintain weight'})
-      - Dietary Preference: ${user.dietaryPreference || 'Not specified'}
-      - Allergies: ${user.allergies && user.allergies.length > 0 ? user.allergies.join(', ') : 'None'}
-      - Activity Level: ${user.activityLevel || 'Moderate'}
-      - Age: ${user.age || 'Not specified'}
-      - Gender: ${user.gender || 'Not specified'}
-      
-      TODAY'S FOOD ENTRIES (${today.toDateString()}):
-      ${foodEntries.length > 0
+  You are a nutrition expert AI assistant for an app called Kcalculate AI, specializing in Indian cuisine, particularly Maharashtrian food. You need to recommend personalized Maharashtrian food options to the user for their remaining meals today.
+  
+  USER PROFILE:
+  - Height: ${user.height || 'Not specified'} cm
+  - Weight: ${user.weight || 'Not specified'} kg
+  - BMI: ${typeof user.bmi === 'number' ? user.bmi.toFixed(1) : 'Not calculated'} (${bmiCategory})
+  - Goal: ${user.goalType || 'maintain'} (${user.goalType === 'weight_loss' ? 'Lose weight' : user.goalType === 'weight_gain' ? 'Gain weight' : 'Maintain weight'})
+  - Dietary Preference: ${user.dietaryPreference || 'Not specified'}
+  - Allergies: ${user.allergies && user.allergies.length > 0 ? user.allergies.join(', ') : 'None'}
+  - Activity Level: ${user.activityLevel || 'Moderate'}
+  - Age: ${user.age || 'Not specified'}
+  - Gender: ${user.gender || 'Not specified'}
+  
+  TODAY'S FOOD ENTRIES (${today.toDateString()}):
+  ${foodEntries.length > 0
         ? JSON.stringify(formattedFoodEntries, null, 2)
         : 'No food logged yet today.'
       }
-      
-      CURRENT NUTRITIONAL TOTALS:
-      - Calories: ${currentNutrition.calories.toFixed(0)} kcal
-      - Proteins: ${currentNutrition.proteins.toFixed(1)} g
-      - Carbohydrates: ${currentNutrition.carbs.toFixed(1)} g
-      - Fats: ${currentNutrition.fats.toFixed(1)} g
-      
-      Based on the user's profile, dietary preferences, and what they've eaten today, provide personalized food recommendations for the remaining meals today.
-      
-      For each meal type (breakfast, lunch, dinner, snack) that hasn't been logged yet, recommend one suitable food option. If a meal has already been logged, don't provide recommendations for it.
-      
-      Provide recommendations in the following JSON format:
+  
+  CURRENT NUTRITIONAL TOTALS:
+  - Calories: ${currentNutrition.calories.toFixed(0)} kcal
+  - Proteins: ${currentNutrition.proteins.toFixed(1)} g
+  - Carbohydrates: ${currentNutrition.carbs.toFixed(1)} g
+  - Fats: ${currentNutrition.fats.toFixed(1)} g
+  
+  Based on the user's profile, dietary preferences, and what they've eaten today, provide personalized Maharashtrian food recommendations for the remaining meals today.
+  
+  IMPORTANT: All recommendations MUST be authentic Maharashtrian dishes from Indian cuisine. Include traditional dishes like Misal Pav, Poha, Varan Bhaat, Thalipeeth, Puran Poli, Modak, Sabudana Khichdi, Batata Vada, Pav Bhaji (Mumbai style), Kothimbir Vadi, etc. Adjust these dishes to meet the user's nutritional needs.
+  
+  For each meal type (breakfast, lunch, dinner, snack) that hasn't been logged yet, recommend 4 suitable Maharashtrian food options. If a meal has already been logged, don't provide recommendations for it.
+  
+  Provide recommendations in the following JSON format:
+  {
+    "recommendations": [
       {
-        "recommendations": [
-          {
-            "foodName": "Name of recommended food",
-            "mealTime": "breakfast|lunch|dinner|snack",
-            "reason": "Brief explanation of why this food is recommended",
-            "isVegetarian": true|false,
-            "description": "Brief description of the food",
-            "nutrition": {
-              "calories": number,
-              "proteins": number,
-              "carbs": number,
-              "fats": number
-            }
-          },
-          ...more recommendations
-        ]
-      }
-      
-      Return ONLY the valid JSON object, nothing else.
-    `;
-
+        "foodName": "Name of recommended Maharashtrian dish",
+        "mealTime": "breakfast|lunch|dinner|snack",
+        "reason": "Brief explanation of why this food is recommended",
+        "isVegetarian": true|false,
+        "description": "Brief description of the dish including traditional ingredients and preparation style",
+        "nutrition": {
+          "calories": number,
+          "proteins": number,
+          "carbs": number,
+          "fats": number
+        }
+      },
+      ...more recommendations
+    ]
+  }
+  
+  Return ONLY the valid JSON object, nothing else.
+`;
     // Call Gemini API
     try {
       const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });

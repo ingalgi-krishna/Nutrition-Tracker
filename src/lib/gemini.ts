@@ -38,7 +38,7 @@ export async function analyzeFoodImage(imageBase64: string): Promise<{
   try {
     // Get the Gemini Pro Vision model
     const model = genAI.getGenerativeModel({
-      model: 'gemini-pro-vision',
+      model: 'gemini-1.5-pro',
       safetySettings,
     });
 
@@ -82,13 +82,13 @@ export async function analyzeFoodImage(imageBase64: string): Promise<{
     // Extract JSON from the response
     try {
       // Find JSON in the text (it might be surrounded by markdown code blocks)
-      const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) || 
-                        text.match(/```\s*([\s\S]*?)\s*```/) || 
-                        [null, text];
-      
+      const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) ||
+        text.match(/```\s*([\s\S]*?)\s*```/) ||
+        [null, text];
+
       const jsonString = jsonMatch[1] || text;
       const data = JSON.parse(jsonString.trim());
-      
+
       return {
         foodName: data.foodName,
         nutrition: {

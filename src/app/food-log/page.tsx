@@ -6,7 +6,7 @@ import { useAuth } from '@/components/Providers/AuthProvider';
 import FoodEntryForm from '@/components/dashboard/FoodEntryForm';
 import FoodEntryList from '@/components/dashboard/FoodEntryList';
 import { motion } from 'framer-motion';
-import { Utensils, BookOpen, Info, Calendar } from 'lucide-react';
+import { Utensils, BookOpen, Info } from 'lucide-react';
 import Link from 'next/link';
 
 export default function FoodLog() {
@@ -52,10 +52,6 @@ export default function FoodLog() {
                     <Link href="/recommendations" className="flex items-center px-4 py-2 text-[#8BAA7C] bg-[#8BAA7C]/10 rounded-lg hover:bg-[#8BAA7C]/20 transition-colors text-sm font-medium">
                         <Info className="mr-1.5 h-4 w-4" />
                         View Recommendations
-                    </Link>
-                    <Link href="/analytics" className="flex items-center px-4 py-2 text-white bg-[#8BAA7C] rounded-lg hover:bg-[#8BAA7C]/90 transition-colors text-sm font-medium shadow-sm">
-                        <Calendar className="mr-1.5 h-4 w-4" />
-                        Nutrition Calendar
                     </Link>
                 </div>
             </motion.div>

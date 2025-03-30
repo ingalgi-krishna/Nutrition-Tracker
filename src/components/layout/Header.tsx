@@ -84,11 +84,12 @@ const Header: React.FC = () => {
                             className="flex-shrink-0 flex items-center space-x-2 group"
                             onClick={closeMenu}
                         >
-                            <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#ABD483] to-[#8BAA7C] flex items-center justify-center shadow-sm">
-                                <Heart className="h-4 w-4 text-white" />
-                            </span>
-                            <span className="text-xl font-extrabold text-[#010100] group-hover:opacity-90 transition-opacity">
-                                Kcalculate<span className="text-[#FC842D]">AI</span>
+                            {/* Replace the Heart icon with your logo */}
+                            <img src="/logo.png" alt="Kcalculate AI Logo" className="h-10 w-10" />
+
+                            <span className="text-xl font-extrabold group-hover:opacity-90 transition-opacity">
+                                <span className="text-[#8BAA7C]">Kcalculate</span>
+                                <span className="text-[#FC842D]">AI</span>
                             </span>
                         </Link>
                     </div>
@@ -293,18 +294,6 @@ const Header: React.FC = () => {
                                     >
                                         <Apple className="h-5 w-5" />
                                         <span>Recommendations</span>
-                                    </Link>
-
-                                    <Link
-                                        href="/analytics"
-                                        className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg text-base font-medium ${isActive('/analytics')
-                                            ? 'text-[#010100] bg-[#ABD483]/10 font-bold'
-                                            : 'text-gray-600 hover:bg-gray-50 hover:text-[#8BAA7C]'
-                                            } transition-colors duration-200`}
-                                        onClick={closeMenu}
-                                    >
-                                        <BarChart2 className="h-5 w-5" />
-                                        <span>Analytics</span>
                                     </Link>
 
                                     <Link

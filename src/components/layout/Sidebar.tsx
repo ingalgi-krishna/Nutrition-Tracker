@@ -58,11 +58,6 @@ const Sidebar: React.FC = () => {
             icon: <Lightbulb className="h-5 w-5" />
         },
         {
-            href: '/analytics',
-            label: 'Analytics',
-            icon: <BarChart className="h-5 w-5" />
-        },
-        {
             href: '/profile',
             label: 'Profile',
             icon: <User className="h-5 w-5" />

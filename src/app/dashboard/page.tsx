@@ -139,14 +139,20 @@ export default function Dashboard() {
         endDate: new Date().toISOString().split('T')[0],
     });
     const getGreeting = () => {
-        const hour = new Date().getHours();
+        const now = new Date();
+        const hour = now.getHours();
+        const minute = now.getMinutes();
 
-        if (hour < 12) {
+        if (hour >= 5 && hour < 12) {
             return "Good morning";
-        } else if (hour < 18) {
+        } else if (hour === 12 && minute === 0) {
+            return "Good noon";
+        } else if (hour >= 12 && hour < 17) {
             return "Good afternoon";
-        } else {
+        } else if (hour >= 17 && hour < 21) {
             return "Good evening";
+        } else {
+            return "Good night";
         }
     };
     // Fetch analytics data
@@ -300,44 +306,49 @@ export default function Dashboard() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="flex gap-4">
-                        <div>
-                            <label htmlFor="startDate" className="block text-xs font-medium text-gray-500 mb-1">
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="w-full sm:w-1/2">
+                            <label htmlFor="startDate" className="block text-xs font-medium text-gray-600 mb-1.5">
                                 From
                             </label>
-                            <input
-                                type="date"
-                                id="startDate"
-                                name="startDate"
-                                value={dateRange.startDate}
-                                onChange={handleDateChange}
-                                max={dateRange.endDate}
-                                className="block w-full px-3 py-2 border border-[#ABD483]/20 rounded-lg text-sm focus:outline-none focus:ring-[#8BAA7C] focus:border-[#8BAA7C]"
-                            />
+                            <div className="relative">
+                                <input
+                                    type="date"
+                                    id="startDate"
+                                    name="startDate"
+                                    value={dateRange.startDate}
+                                    onChange={handleDateChange}
+                                    max={dateRange.endDate}
+                                    className="block w-full px-3 py-2.5 border border-[#ABD483]/30 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#8BAA7C]/30 focus:border-[#8BAA7C] transition-all duration-200 appearance-none bg-white shadow-sm"
+                                />
+                            </div>
                         </div>
-                        <div>
-                            <label htmlFor="endDate" className="block text-xs font-medium text-gray-500 mb-1">
+
+                        <div className="w-full sm:w-1/2">
+                            <label htmlFor="endDate" className="block text-xs font-medium text-gray-600 mb-1.5">
                                 To
                             </label>
-                            <input
-                                type="date"
-                                id="endDate"
-                                name="endDate"
-                                value={dateRange.endDate}
-                                onChange={handleDateChange}
-                                min={dateRange.startDate}
-                                max={new Date().toISOString().split('T')[0]}
-                                className="block w-full px-3 py-2 border border-[#ABD483]/20 rounded-lg text-sm focus:outline-none focus:ring-[#8BAA7C] focus:border-[#8BAA7C]"
-                            />
+                            <div className="relative">
+                                <input
+                                    type="date"
+                                    id="endDate"
+                                    name="endDate"
+                                    value={dateRange.endDate}
+                                    onChange={handleDateChange}
+                                    min={dateRange.startDate}
+                                    max={new Date().toISOString().split('T')[0]}
+                                    className="block w-full px-3 py-2.5 border border-[#ABD483]/30 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#8BAA7C]/30 focus:border-[#8BAA7C] transition-all duration-200 appearance-none bg-white shadow-sm"
+                                />
+                            </div>
                         </div>
                     </div>
                     <button
                         onClick={handleRefresh}
                         disabled={refreshing}
-                        className="px-4 py-2.5 bg-[#8BAA7C] text-white rounded-lg hover:bg-[#8BAA7C]/90 focus:outline-none focus:ring-2 focus:ring-[#8BAA7C] focus:ring-offset-2 transition-all duration-200 flex items-center font-medium shadow-sm disabled:opacity-70 self-end"
+                        className="px-2 py-2.5 bg-[#8BAA7C] text-white rounded-lg hover:bg-[#8BAA7C]/90 focus:outline-none focus:ring-2 focus:ring-[#8BAA7C] focus:ring-offset-2 transition-all duration-200 flex items-center font-medium shadow-sm disabled:opacity-70 self-end"
                     >
                         <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                        {refreshing ? 'Refreshing...' : 'Refresh Data'}
+                        {refreshing ? 'Refreshing...' : 'Refresh'}
                     </button>
                 </div>
             </div>

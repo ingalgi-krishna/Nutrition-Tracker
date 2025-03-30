@@ -519,40 +519,40 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
                 )}
             </AnimatePresence>
 
-            {/* Input method selector */}
+            {/* Input method selector - fixed width */}
             <div className="mb-6">
-                <div className="flex border border-[#ABD483]/30 rounded-lg overflow-hidden bg-white shadow-sm">
+                <div className="grid grid-cols-3 border border-[#ABD483]/30 rounded-lg overflow-hidden bg-white shadow-sm w-full">
                     <button
                         type="button"
                         onClick={() => handleInputMethodChange('manual')}
-                        className={`flex-1 py-2.5 px-4 text-sm font-medium flex justify-center items-center gap-1.5 transition-colors ${inputMethod === 'manual'
+                        className={`py-3 text-sm font-medium flex justify-center items-center transition-colors ${inputMethod === 'manual'
                             ? 'bg-[#8BAA7C] text-white'
                             : 'bg-gray-50 text-gray-700 hover:bg-[#8BAA7C]/10 hover:text-[#8BAA7C]'
                             }`}
                     >
-                        <Pencil className="h-4 w-4" />
+                        <Pencil className="h-4 w-4 mr-1.5 sm:mr-1.5" />
                         <span>Manual</span>
                     </button>
                     <button
                         type="button"
                         onClick={() => handleInputMethodChange('image')}
-                        className={`flex-1 py-2.5 px-4 text-sm font-medium flex justify-center items-center gap-1.5 transition-colors ${inputMethod === 'image'
+                        className={`py-3 text-sm font-medium flex justify-center items-center transition-colors ${inputMethod === 'image'
                             ? 'bg-[#8BAA7C] text-white'
                             : 'bg-gray-50 text-gray-700 hover:bg-[#8BAA7C]/10 hover:text-[#8BAA7C]'
                             }`}
                     >
-                        <ImageIcon className="h-4 w-4" />
+                        <ImageIcon className="h-4 w-4 mr-1.5 sm:mr-1.5" />
                         <span>Upload</span>
                     </button>
                     <button
                         type="button"
                         onClick={() => handleInputMethodChange('camera')}
-                        className={`flex-1 py-2.5 px-4 text-sm font-medium flex justify-center items-center gap-1.5 transition-colors ${inputMethod === 'camera'
+                        className={`py-3 text-sm font-medium flex justify-center items-center transition-colors ${inputMethod === 'camera'
                             ? 'bg-[#8BAA7C] text-white'
                             : 'bg-gray-50 text-gray-700 hover:bg-[#8BAA7C]/10 hover:text-[#8BAA7C]'
                             }`}
                     >
-                        <Camera className="h-4 w-4" />
+                        <Camera className="h-4 w-4 mr-1.5 sm:mr-1.5" />
                         <span>Camera</span>
                     </button>
                 </div>
@@ -591,7 +591,7 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
                 </motion.div>
             )}
 
-            {/* Camera view */}
+            {/* Camera view - Enhanced for smartphones */}
             {inputMethod === 'camera' && !imagePreview && (
                 <motion.div
                     initial={{ opacity: 0 }}
@@ -599,7 +599,7 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
                     transition={{ duration: 0.3 }}
                     className="mb-6 border border-[#ABD483]/30 rounded-lg overflow-hidden shadow-sm bg-black"
                 >
-                    <div className="relative aspect-video">
+                    <div className="relative aspect-[3/4] sm:aspect-video">
                         <video
                             ref={videoRef}
                             autoPlay
@@ -609,11 +609,11 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
                         <div className="absolute top-4 left-4 bg-black/50 text-white text-xs px-2 py-1 rounded-full">
                             {cameraFacing === 'environment' ? 'Back Camera' : 'Front Camera'}
                         </div>
-                        <div className="absolute bottom-6 left-0 right-0 flex justify-center items-center space-x-6">
+                        <div className="absolute bottom-8 left-0 right-0 flex justify-center items-center space-x-8">
                             <button
                                 type="button"
                                 onClick={toggleCamera}
-                                className="bg-white rounded-full p-3 shadow-lg hover:bg-gray-100 transition-colors"
+                                className="bg-white rounded-full p-4 shadow-lg hover:bg-gray-100 transition-colors"
                                 aria-label="Switch camera"
                             >
                                 <RefreshCw className="h-6 w-6 text-[#8BAA7C]" />
@@ -621,7 +621,7 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
                             <button
                                 type="button"
                                 onClick={captureImage}
-                                className="bg-white rounded-full p-5 shadow-lg hover:bg-gray-100 transition-colors"
+                                className="bg-white rounded-full p-6 shadow-lg hover:bg-gray-100 transition-colors"
                                 aria-label="Take photo"
                             >
                                 <Camera className="h-8 w-8 text-[#FC842D]" />
@@ -629,11 +629,18 @@ export default function FoodEntryForm({ onSuccess }: FoodEntryFormProps) {
                             <button
                                 type="button"
                                 onClick={() => handleInputMethodChange('manual')}
-                                className="bg-white rounded-full p-3 shadow-lg hover:bg-gray-100 transition-colors"
+                                className="bg-white rounded-full p-4 shadow-lg hover:bg-gray-100 transition-colors"
                                 aria-label="Cancel"
                             >
                                 <X className="h-6 w-6 text-gray-500" />
                             </button>
+                        </div>
+
+                        {/* Instructions overlay */}
+                        <div className="absolute top-14 left-0 right-0 flex justify-center">
+                            <div className="bg-black/50 text-white text-xs px-3 py-1.5 rounded-full">
+                                Position food in frame and tap the camera button
+                            </div>
                         </div>
                     </div>
                     <canvas ref={canvasRef} className="hidden" />

@@ -133,7 +133,6 @@ export default function Recommendations() {
     const [error, setError] = useState<string | null>(null);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [refreshing, setRefreshing] = useState(false);
-
     const handleRefresh = () => {
         setRefreshing(true);
         setRefreshTrigger(prev => prev + 1);
@@ -195,7 +194,7 @@ export default function Recommendations() {
         return <Heart className="h-4 w-4 text-green-500" />;
     }
 
-    // Render a meal section using the Bento grid
+    // Modify the Bento Grid Layout to create a 2x2 grid
     const renderMealSection = (mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack', items: Recommendation[]) => {
         if (items.length === 0) return null;
 
@@ -217,121 +216,98 @@ export default function Recommendations() {
                     </h2>
                 </div>
 
-                {/* Bento Grid Layout - Modified to align cards by meal proportion */}
-                <div className="grid grid-cols-12 gap-6">
-                    {items.map((item, index) => {
-                        // Determine card size based on calories or importance
-                        // Higher calorie items get more space
-                        const calories = item.nutrition?.calories || 0;
-                        let colSpan = 4; // Default size
+                {/* Replace the current grid with a more square 2x2 grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {items.map((item, index) => (
+                        <motion.div
+                            key={index}
+                            variants={itemVariants}
+                            whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                            className="bg-white rounded-xl shadow-sm overflow-hidden border border-[#ABD483]/20 hover:shadow-md transition-all duration-300"
+                        >
+                            {/* Card content remains the same */}
+                            <div className="relative">
+                                <div className={`absolute inset-0 bg-gradient-to-r ${config.gradientFrom} ${config.gradientTo} rounded-t-xl`}></div>
 
-                        // Assign column spans based on meal size or position
-                        if (index === 0) {
-                            // Featured item (first)
-                            colSpan = 8;
-                        } else if (calories > 500) {
-                            // Large meals
-                            colSpan = 6;
-                        } else if (calories < 200) {
-                            // Small meals/snacks
-                            colSpan = 3;
-                        }
-
-                        return (
-                            <motion.div
-                                key={index}
-                                variants={itemVariants}
-                                whileHover={{ y: -5, transition: { duration: 0.2 } }}
-                                className={`bg-white rounded-xl shadow-sm overflow-hidden border border-[#ABD483]/20 hover:shadow-md transition-all duration-300 col-span-12 md:col-span-${colSpan}`}
-                            >
-                                {/* Card Header with Food Name and Diet Type */}
-                                <div className="relative">
-                                    {/* Background gradient overlay */}
-                                    <div className={`absolute inset-0 bg-gradient-to-r ${config.gradientFrom} ${config.gradientTo} rounded-t-xl`}></div>
-
-                                    <div className="p-5 border-b border-[#ABD483]/10 relative">
-                                        <div className="flex justify-between items-center">
-                                            <h3 className="text-lg font-bold text-[#010100] flex items-center">
-                                                {item.foodName}
-                                                {index === 0 && (
-                                                    <span className="ml-2 px-2 py-0.5 bg-[#FC842D]/10 text-[#FC842D] text-xs rounded-full font-medium">
-                                                        Featured
-                                                    </span>
-                                                )}
-                                            </h3>
-                                            {item.isVegetarian !== undefined && (
-                                                <span className={`px-2 py-1 rounded-lg text-xs font-medium ${item.isVegetarian
-                                                    ? 'bg-[#ABD483]/20 text-[#8BAA7C]'
-                                                    : 'bg-red-100 text-red-800'
-                                                    }`}>
-                                                    {item.isVegetarian ? 'Vegetarian' : 'Non-Vegetarian'}
+                                <div className="p-5 border-b border-[#ABD483]/10 relative">
+                                    <div className="flex justify-between items-center">
+                                        <h3 className="text-lg font-bold text-[#010100] flex items-center">
+                                            {item.foodName}
+                                            {index === 0 && (
+                                                <span className="ml-2 px-2 py-0.5 bg-[#FC842D]/10 text-[#FC842D] text-xs rounded-full font-medium">
+                                                    Featured
                                                 </span>
                                             )}
-                                        </div>
-
-                                        {item.description && (
-                                            <p className="text-gray-600 text-sm mt-1">
-                                                {item.description}
-                                            </p>
+                                        </h3>
+                                        {item.isVegetarian !== undefined && (
+                                            <span className={`px-2 py-1 rounded-lg text-xs font-medium ${item.isVegetarian
+                                                ? 'bg-[#ABD483]/20 text-[#8BAA7C]'
+                                                : 'bg-red-100 text-red-800'
+                                                }`}>
+                                                {item.isVegetarian ? 'Vegetarian' : 'Non-Vegetarian'}
+                                            </span>
                                         )}
                                     </div>
+
+                                    {item.description && (
+                                        <p className="text-gray-600 text-sm mt-1">
+                                            {item.description}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Card Body with Nutrition Facts */}
+                            <div className="p-5">
+                                {/* Rest of the card content remains the same */}
+                                {item.nutrition && (
+                                    <div className="absolute top-3 right-3 bg-white rounded-full border border-[#ABD483]/20 shadow-sm h-12 w-12 flex flex-col items-center justify-center">
+                                        <span className="text-xs font-bold text-[#FC842D]">{formatNumber(item.nutrition.calories)}</span>
+                                        <span className="text-[10px] text-gray-500">kcal</span>
+                                    </div>
+                                )}
+
+                                <div className="mb-4">
+                                    <h4 className="text-xs uppercase text-gray-500 font-semibold mb-1.5">Why This Works For You</h4>
+                                    <p className="text-gray-700 text-sm">
+                                        {item.reason}
+                                    </p>
                                 </div>
 
-                                {/* Card Body with Nutrition Facts */}
-                                <div className="p-5">
-                                    {/* Calorie Badge - shows meal size visually */}
-                                    {item.nutrition && (
-                                        <div className="absolute top-3 right-3 bg-white rounded-full border border-[#ABD483]/20 shadow-sm h-12 w-12 flex flex-col items-center justify-center">
-                                            <span className="text-xs font-bold text-[#FC842D]">{formatNumber(item.nutrition.calories)}</span>
-                                            <span className="text-[10px] text-gray-500">kcal</span>
-                                        </div>
-                                    )}
-
-                                    {/* Reason Section */}
+                                {item.nutrition && (
                                     <div className="mb-4">
-                                        <h4 className="text-xs uppercase text-gray-500 font-semibold mb-1.5">Why This Works For You</h4>
-                                        <p className="text-gray-700 text-sm">
-                                            {item.reason}
-                                        </p>
-                                    </div>
-
-                                    {/* Nutrition Facts Section */}
-                                    {item.nutrition && (
-                                        <div className="mb-4">
-                                            <h4 className="text-xs uppercase text-gray-500 font-semibold mb-1.5">Nutrition Facts</h4>
-                                            <div className="grid grid-cols-3 gap-2">
-                                                <div className="bg-[#8BAA7C]/10 p-2 rounded-lg text-center">
-                                                    <p className="text-sm font-bold text-[#8BAA7C]">{formatNumber(item.nutrition.proteins)}g</p>
-                                                    <p className="text-xs text-gray-500">protein</p>
-                                                </div>
-                                                <div className="bg-[#8BAA7C]/10 p-2 rounded-lg text-center">
-                                                    <p className="text-sm font-bold text-[#8BAA7C]">{formatNumber(item.nutrition.carbs)}g</p>
-                                                    <p className="text-xs text-gray-500">carbs</p>
-                                                </div>
-                                                <div className="bg-[#8BAA7C]/10 p-2 rounded-lg text-center">
-                                                    <p className="text-sm font-bold text-[#8BAA7C]">{formatNumber(item.nutrition.fats)}g</p>
-                                                    <p className="text-xs text-gray-500">fats</p>
-                                                </div>
+                                        <h4 className="text-xs uppercase text-gray-500 font-semibold mb-1.5">Nutrition Facts</h4>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            <div className="bg-[#8BAA7C]/10 p-2 rounded-lg text-center">
+                                                <p className="text-sm font-bold text-[#8BAA7C]">{formatNumber(item.nutrition.proteins)}g</p>
+                                                <p className="text-xs text-gray-500">protein</p>
+                                            </div>
+                                            <div className="bg-[#8BAA7C]/10 p-2 rounded-lg text-center">
+                                                <p className="text-sm font-bold text-[#8BAA7C]">{formatNumber(item.nutrition.carbs)}g</p>
+                                                <p className="text-xs text-gray-500">carbs</p>
+                                            </div>
+                                            <div className="bg-[#8BAA7C]/10 p-2 rounded-lg text-center">
+                                                <p className="text-sm font-bold text-[#8BAA7C]">{formatNumber(item.nutrition.fats)}g</p>
+                                                <p className="text-xs text-gray-500">fats</p>
                                             </div>
                                         </div>
-                                    )}
-
-                                    {/* Card Footer */}
-                                    <div className="flex justify-between items-center pt-2">
-                                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${config.tagFrom} ${config.tagTo} ${config.tagText}`}>
-                                            {config.smallIcon}
-                                            <span>{config.title}</span>
-                                        </span>
-
-                                        <button className="text-[#8BAA7C] text-sm font-medium hover:text-[#8BAA7C]/80 transition-colors flex items-center">
-                                            <Plus className="h-3.5 w-3.5 mr-1" />
-                                            Add to Log
-                                        </button>
                                     </div>
+                                )}
+
+                                <div className="flex justify-between items-center pt-2">
+                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${config.tagFrom} ${config.tagTo} ${config.tagText}`}>
+                                        {config.smallIcon}
+                                        <span>{config.title}</span>
+                                    </span>
+
+                                    <button className="text-[#8BAA7C] text-sm font-medium hover:text-[#8BAA7C]/80 transition-colors flex items-center">
+                                        <Plus className="h-3.5 w-3.5 mr-1" />
+                                        Add to Log
+                                    </button>
                                 </div>
-                            </motion.div>
-                        );
-                    })}
+                            </div>
+                        </motion.div>
+                    ))}
                 </div>
             </motion.div>
         );

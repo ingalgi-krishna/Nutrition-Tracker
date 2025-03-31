@@ -423,7 +423,7 @@ export default function Home() {
       </div>
 
       {/* About Our Team Section */}
-      <div className="py-20 bg-[#010100]/[0.02]">
+      {/* <div className="py-20 bg-[#010100]/[0.02]">
         <div className="max-w-7xl mx-auto px-4">
           <motion.div
             initial={{ opacity: 0 }}
@@ -486,7 +486,7 @@ export default function Home() {
             </motion.div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* CTA Section */}
       <motion.div

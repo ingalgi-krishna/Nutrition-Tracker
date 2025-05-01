@@ -15,6 +15,7 @@ export interface IUser extends Document {
   activityLevel?: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
   age?: number;
   gender?: 'male' | 'female' | 'other';
+  waterIntakeGoal?: number; // In milliliters (ml)
   country?: string; // New field for country
   state?: string;   // New field for state/province
   onboardingCompleted: boolean;
@@ -45,6 +46,7 @@ const UserSchema = new Schema<IUser>(
       enum: ['sedentary', 'light', 'moderate', 'active', 'very_active']
     },
     age: { type: Number },
+    waterIntakeGoal: { type: Number, default: 2000 }, // Default to 2000ml (2 liters)
     gender: { type: String, enum: ['male', 'female', 'other'] },
     country: { type: String }, // New field
     state: { type: String },   // New field

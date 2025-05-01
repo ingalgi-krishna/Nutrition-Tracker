@@ -5,7 +5,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/Providers/AuthProvider';
-import { User, LogOut, ChevronDown, Menu, X, BarChart2, Apple, List, Home, Heart } from 'lucide-react';
+import { User, LogOut, ChevronDown, Menu, X, BarChart2, Apple, List, Home, Heart, Droplet, Wheat } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Header: React.FC = () => {
@@ -121,9 +121,18 @@ const Header: React.FC = () => {
                                     {isActive('/dashboard') && <ActiveIndicator />}
                                 </Link>
 
+                                <Link href="/water-tracker" className={navItemClass('/food-log')}>
+                                    <div className="flex items-center space-x-1.5">
+                                        <Droplet className="w-4 h-4" />
+                                        <span>Water Intake</span>
+                                    </div>
+                                    {isActive('/food-log') && <ActiveIndicator />}
+                                </Link>
+
+
                                 <Link href="/food-log" className={navItemClass('/food-log')}>
                                     <div className="flex items-center space-x-1.5">
-                                        <List className="w-4 h-4" />
+                                        <Wheat className="w-4 h-4" />
                                         <span>Food Log</span>
                                     </div>
                                     {isActive('/food-log') && <ActiveIndicator />}

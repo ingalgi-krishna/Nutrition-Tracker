@@ -17,14 +17,14 @@ import {
     Apple,
     BarChart3,
     Brain,
-
     Coffee,
     BarChart,
     AlertCircle,
     Lightbulb,
     LightbulbIcon,
     Check,
-    Milk
+    Milk,
+    Droplet
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import MacroChart from '@/components/dashboard/MacroChart';
@@ -35,6 +35,7 @@ import TopFoodsChart from '@/components/dashboard/TopFoodsChart';
 import StatsCard from '@/components/dashboard/StatsCard';
 import FoodCard from '@/components/dashboard/FoodCard';
 import BMRCard from '@/components/dashboard/BMRCard';
+import WaterIntakeStatus from '@/components/dashboard/WaterIntakeStatus';
 
 // Animation variants
 const containerVariants = {
@@ -138,6 +139,7 @@ export default function Dashboard() {
         startDate: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
         endDate: new Date().toISOString().split('T')[0],
     });
+
     const getGreeting = () => {
         const now = new Date();
         const hour = now.getHours();
@@ -155,6 +157,7 @@ export default function Dashboard() {
             return "Good night";
         }
     };
+
     // Fetch analytics data
     useEffect(() => {
         if (!user?.id) return;
@@ -294,7 +297,7 @@ export default function Dashboard() {
     }
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 font-DM_Sans bg-[#FEFEFF]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 font-DM_Sans bg-[#FEFEFF]">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                 <div>
                     <h1 className="text-3xl font-bold text-[#010100]">
@@ -360,9 +363,7 @@ export default function Dashboard() {
                     className="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg mb-8 flex items-center space-x-3"
                 >
                     <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0" />
-                    <p className="text-red-700">
-                        {error}
-                    </p>
+                    <p className="text-red-700">{error}</p>
                 </motion.div>
             )}
 
@@ -445,10 +446,52 @@ export default function Dashboard() {
                     animate="visible"
                     variants={containerVariants}
                 >
-                    {/* Bento Grid Layout */}
-                    <div className="grid grid-cols-12 gap-6">
-                        {/* Stats Cards Row - 4 small cards spanning 3 columns each */}
-                        <motion.div variants={itemVariants} className="col-span-12 md:col-span-3 bg-white rounded-xl shadow-sm overflow-hidden border border-[#ABD483]/20 hover:shadow-md transition-all duration-300">
+                    {/* Refactored Bento Grid Layout */}
+                    <div className="grid grid-cols-12 gap-4">
+                        {/* Row 1: Key metrics and water intake */}
+                        <motion.div variants={itemVariants} className="col-span-12 md:col-span-8 bg-white rounded-xl shadow-sm overflow-hidden border border-[#ABD483]/20 hover:shadow-md transition-all duration-300">
+                            <div className="p-4 border-b border-[#ABD483]/10">
+                                <h3 className="text-lg font-bold text-[#010100] flex items-center">
+                                    Today's Nutrition Progress
+                                    <span className="ml-2 px-2 py-0.5 bg-[#FC842D]/10 text-[#FC842D] text-xs rounded-full font-medium">
+                                        Featured
+                                    </span>
+                                </h3>
+                            </div>
+                            <div className="p-4">
+                                <MacroChart
+                                    calories={analyticsData.todayMacros.calories}
+                                    proteins={analyticsData.todayMacros.proteins}
+                                    carbs={analyticsData.todayMacros.carbs}
+                                    fats={analyticsData.todayMacros.fats}
+                                    goals={analyticsData.recommendedMacros}
+                                />
+                            </div>
+                        </motion.div>
+
+                        <motion.div variants={itemVariants} className="col-span-12 md:col-span-4 grid grid-cols-1 gap-4">
+                            {/* Water Intake Status */}
+                            <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-[#ABD483]/20 hover:shadow-md transition-all duration-300">
+                                <WaterIntakeStatus />
+                            </div>
+
+                            {/* BMI Analysis */}
+                            <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-[#ABD483]/20 hover:shadow-md transition-all duration-300">
+                                <div className="p-4 border-b border-[#ABD483]/10">
+                                    <h3 className="text-lg font-bold text-[#010100]">BMI Analysis</h3>
+                                </div>
+                                <div className="p-4">
+                                    <BMICard
+                                        bmi={analyticsData.user.bmi}
+                                        height={analyticsData.user.height}
+                                        weight={analyticsData.user.weight}
+                                    />
+                                </div>
+                            </div>
+                        </motion.div>
+
+                        {/* Row 2: Stats cards */}
+                        <motion.div variants={itemVariants} className="col-span-6 sm:col-span-3 bg-white rounded-xl shadow-sm overflow-hidden border border-[#ABD483]/20 hover:shadow-md transition-all duration-300">
                             <StatsCard
                                 title="Total Entries"
                                 value={analyticsData.overall.totalEntries}
@@ -457,7 +500,7 @@ export default function Dashboard() {
                             />
                         </motion.div>
 
-                        <motion.div variants={itemVariants} className="col-span-12 md:col-span-3 bg-white rounded-xl shadow-sm overflow-hidden border border-[#ABD483]/20 hover:shadow-md transition-all duration-300">
+                        <motion.div variants={itemVariants} className="col-span-6 sm:col-span-3 bg-white rounded-xl shadow-sm overflow-hidden border border-[#ABD483]/20 hover:shadow-md transition-all duration-300">
                             <StatsCard
                                 title="Daily Average"
                                 value={`${Math.round(analyticsData.overall.averageCaloriesPerDay)} cal`}
@@ -475,7 +518,7 @@ export default function Dashboard() {
                             />
                         </motion.div>
 
-                        <motion.div variants={itemVariants} className="col-span-12 md:col-span-3 bg-white rounded-xl shadow-sm overflow-hidden border border-[#ABD483]/20 hover:shadow-md transition-all duration-300">
+                        <motion.div variants={itemVariants} className="col-span-6 sm:col-span-3 bg-white rounded-xl shadow-sm overflow-hidden border border-[#ABD483]/20 hover:shadow-md transition-all duration-300">
                             <StatsCard
                                 title="Average Protein"
                                 value={`${Math.round(analyticsData.overall.averageProteinsPerDay)}g`}
@@ -484,7 +527,7 @@ export default function Dashboard() {
                             />
                         </motion.div>
 
-                        <motion.div variants={itemVariants} className="col-span-12 md:col-span-3 bg-white rounded-xl shadow-sm overflow-hidden border border-[#ABD483]/20 hover:shadow-md transition-all duration-300">
+                        <motion.div variants={itemVariants} className="col-span-6 sm:col-span-3 bg-white rounded-xl shadow-sm overflow-hidden border border-[#ABD483]/20 hover:shadow-md transition-all duration-300">
                             <StatsCard
                                 title="Most Logged"
                                 value={analyticsData.topFoods[0]?.name || "No data"}
@@ -493,47 +536,12 @@ export default function Dashboard() {
                             />
                         </motion.div>
 
-                        {/* MacroChart - Large card taking up 8 columns */}
-                        <motion.div variants={itemVariants} className="col-span-12 md:col-span-8 bg-white rounded-xl shadow-sm overflow-hidden border border-[#ABD483]/20 hover:shadow-md transition-all duration-300">
-                            <div className="p-5 border-b border-[#ABD483]/10">
-                                <h3 className="text-lg font-bold text-[#010100] flex items-center">
-                                    Today's Nutrition Progress
-                                    <span className="ml-2 px-2 py-0.5 bg-[#FC842D]/10 text-[#FC842D] text-xs rounded-full font-medium">
-                                        Featured
-                                    </span>
-                                </h3>
-                            </div>
-                            <div className="p-5">
-                                <MacroChart
-                                    calories={analyticsData.todayMacros.calories}
-                                    proteins={analyticsData.todayMacros.proteins}
-                                    carbs={analyticsData.todayMacros.carbs}
-                                    fats={analyticsData.todayMacros.fats}
-                                    goals={analyticsData.recommendedMacros}
-                                />
-                            </div>
-                        </motion.div>
-
-                        {/* BMI Card - Medium card taking up 4 columns */}
-                        <motion.div variants={itemVariants} className="col-span-12 md:col-span-4 bg-white rounded-xl shadow-sm overflow-hidden border border-[#ABD483]/20 hover:shadow-md transition-all duration-300">
-                            <div className="p-5 border-b border-[#ABD483]/10">
-                                <h3 className="text-lg font-bold text-[#010100]">BMI Analysis</h3>
-                            </div>
-                            <div className="p-5">
-                                <BMICard
-                                    bmi={analyticsData.user.bmi}
-                                    height={analyticsData.user.height}
-                                    weight={analyticsData.user.weight}
-                                />
-                            </div>
-                        </motion.div>
-
-                        {/* Recent Foods Section - Using your FoodCard component */}
-                        <motion.div variants={itemVariants} className="col-span-12 md:col-span-6 bg-white rounded-xl shadow-sm overflow-hidden border border-[#ABD483]/20 hover:shadow-md transition-all duration-300">
-                            <div className="p-5 border-b border-[#ABD483]/10">
+                        {/* Row 3: Recent Foods and Macro Distribution */}
+                        <motion.div variants={itemVariants} className="col-span-12 md:col-span-6 lg:col-span-8 bg-white rounded-xl shadow-sm overflow-hidden border border-[#ABD483]/20 hover:shadow-md transition-all duration-300">
+                            <div className="p-4 border-b border-[#ABD483]/10">
                                 <h3 className="text-lg font-bold text-[#010100]">Recent Food Entries</h3>
                             </div>
-                            <div className="p-5">
+                            <div className="p-4">
                                 {analyticsData.recentFoods && analyticsData.recentFoods.length > 0 ? (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         {analyticsData.recentFoods.slice(0, 4).map((food) => (
@@ -564,12 +572,11 @@ export default function Dashboard() {
                             </div>
                         </motion.div>
 
-                        {/* MacroBreakdown - Medium card taking up 6 columns */}
-                        <motion.div variants={itemVariants} className="col-span-12 md:col-span-6 bg-white rounded-xl shadow-sm overflow-hidden border border-[#ABD483]/20 hover:shadow-md transition-all duration-300">
-                            <div className="p-5 border-b border-[#ABD483]/10">
+                        <motion.div variants={itemVariants} className="col-span-12 md:col-span-6 lg:col-span-4 bg-white rounded-xl shadow-sm overflow-hidden border border-[#ABD483]/20 hover:shadow-md transition-all duration-300">
+                            <div className="p-4 border-b border-[#ABD483]/10">
                                 <h3 className="text-lg font-bold text-[#010100]">Macro Distribution</h3>
                             </div>
-                            <div className="p-5">
+                            <div className="p-4">
                                 <MacroBreakdownChart
                                     proteins={analyticsData.macroBreakdown.proteins}
                                     carbs={analyticsData.macroBreakdown.carbs}
@@ -578,12 +585,12 @@ export default function Dashboard() {
                             </div>
                         </motion.div>
 
-                        {/* CalorieChart - Large card taking up 8 columns */}
+                        {/* Row 4: Calorie Trends and BMR */}
                         <motion.div variants={itemVariants} className="col-span-12 md:col-span-8 bg-white rounded-xl shadow-sm overflow-hidden border border-[#ABD483]/20 hover:shadow-md transition-all duration-300">
-                            <div className="p-5 border-b border-[#ABD483]/10">
+                            <div className="p-4 border-b border-[#ABD483]/10">
                                 <h3 className="text-lg font-bold text-[#010100]">Calorie Trends</h3>
                             </div>
-                            <div className="p-5">
+                            <div className="p-4">
                                 <CalorieChart
                                     data={analyticsData.dailyTotals}
                                     recommended={analyticsData.recommendedMacros.calories}
@@ -591,12 +598,11 @@ export default function Dashboard() {
                             </div>
                         </motion.div>
 
-                        {/* BMR Card - Medium card taking up 4 columns */}
                         <motion.div variants={itemVariants} className="col-span-12 md:col-span-4 bg-white rounded-xl shadow-sm overflow-hidden border border-[#ABD483]/20 hover:shadow-md transition-all duration-300">
-                            <div className="p-5 border-b border-[#ABD483]/10">
+                            <div className="p-4 border-b border-[#ABD483]/10">
                                 <h3 className="text-lg font-bold text-[#010100]">Metabolic Rate</h3>
                             </div>
-                            <div className="p-5">
+                            <div className="p-4">
                                 <BMRCard
                                     bmr={analyticsData.recommendedMacros.bmr}
                                     tdee={analyticsData.recommendedMacros.tdee}
@@ -607,20 +613,17 @@ export default function Dashboard() {
                             </div>
                         </motion.div>
 
-                        {/* Top Foods - Medium card taking up 4 columns */}
+                        {/* Row 5: Top Foods and Nutrition Insights */}
                         <motion.div variants={itemVariants} className="col-span-12 md:col-span-4 bg-white rounded-xl shadow-sm overflow-hidden border border-[#ABD483]/20 hover:shadow-md transition-all duration-300">
-                            <div className="p-5 border-b border-[#ABD483]/10">
+                            <div className="p-4 border-b border-[#ABD483]/10">
                                 <h3 className="text-lg font-bold text-[#010100]">Most Logged Foods</h3>
                             </div>
-                            <div className="p-5">
+                            <div className="p-4">
                                 <TopFoodsChart foods={analyticsData.topFoods} />
                             </div>
                         </motion.div>
-
-                        {/* Nutrition Insights Card */}
-                        {/* Nutrition Insights Card - Enhanced UI */}
                         <motion.div variants={itemVariants} className="col-span-12 md:col-span-8 bg-white rounded-xl shadow-sm overflow-hidden border border-[#ABD483]/20 hover:shadow-md transition-all duration-300">
-                            <div className="p-5 border-b border-[#ABD483]/10 flex justify-between items-center">
+                            <div className="p-4 border-b border-[#ABD483]/10 flex justify-between items-center">
                                 <h3 className="text-lg font-bold text-[#010100] flex items-center">
                                     <span className="w-7 h-7 rounded-full bg-[#ABD483]/20 flex items-center justify-center mr-2">
                                         <Brain className="h-4 w-4 text-[#8BAA7C]" />
@@ -629,7 +632,7 @@ export default function Dashboard() {
                                 </h3>
                                 <span className="text-xs text-gray-500">AI-powered recommendations</span>
                             </div>
-                            <div className="p-5">
+                            <div className="p-4">
                                 <div className="space-y-4">
                                     {/* Macro Balance Insight Card */}
                                     <div className="bg-gradient-to-r from-[#ABD483]/5 to-[#ABD483]/15 rounded-xl overflow-hidden">

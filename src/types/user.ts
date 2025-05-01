@@ -1,7 +1,6 @@
 // src/types/user.ts
 export interface UserProfile {
   state: any;
-  state: any;
   activityLevel: string;
   country: string;
   id: string;

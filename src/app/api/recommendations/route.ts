@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 
     await connectToDatabase();
 
-    // Get user profile data
+    // Get user profile data including country and state
     const user = await User.findById(userId);
     if (!user) {
       return NextResponse.json(
@@ -87,9 +87,27 @@ export async function GET(request: NextRequest) {
       })
     }));
 
-    // Prepare the prompt for Gemini
+    // Get current time to determine which meals should be recommended
+    const currentHour = new Date().getHours();
+
+    // Determine meal times based on current time
+    let mealsToRecommend = [];
+    if (currentHour < 10) mealsToRecommend.push('breakfast', 'lunch', 'dinner', 'snack');
+    else if (currentHour < 14) mealsToRecommend.push('lunch', 'dinner', 'snack');
+    else if (currentHour < 18) mealsToRecommend.push('dinner', 'snack');
+    else mealsToRecommend.push('dinner');
+
+    // Filter out meals that have already been logged
+    const loggedMeals = new Set(foodEntries.map(entry => entry.mealType));
+    mealsToRecommend = mealsToRecommend.filter(meal => !loggedMeals.has(meal));
+
+    // Get region information from the user model - these fields should match what's in the User model
+    const country = user.country || 'India'; // Default to India if not specified
+    const state = user.state || 'Maharashtra'; // Default to Maharashtra if not specified
+
+    // Prepare the prompt for Gemini based on region
     const prompt = `
-  You are a nutrition expert AI assistant for an app called Kcalculate AI, specializing in Indian cuisine, particularly Maharashtrian food. You need to recommend personalized Maharashtrian food options to the user for their remaining meals today.
+  You are a nutrition expert AI assistant for an app called Kcalculate AI, specializing in personalized nutrition. You need to recommend personalized food options to the user based on their region, time of day, and health goals.
   
   USER PROFILE:
   - Height: ${user.height || 'Not specified'} cm
@@ -101,6 +119,8 @@ export async function GET(request: NextRequest) {
   - Activity Level: ${user.activityLevel || 'Moderate'}
   - Age: ${user.age || 'Not specified'}
   - Gender: ${user.gender || 'Not specified'}
+  - Country: ${country}
+  - State/Region: ${state}
   
   TODAY'S FOOD ENTRIES (${today.toDateString()}):
   ${foodEntries.length > 0
@@ -114,19 +134,25 @@ export async function GET(request: NextRequest) {
   - Carbohydrates: ${currentNutrition.carbs.toFixed(1)} g
   - Fats: ${currentNutrition.fats.toFixed(1)} g
   
-  Based on the user's profile, dietary preferences, and what they've eaten today, provide personalized Maharashtrian food recommendations for the remaining meals today.
+  MEALS TO RECOMMEND:
+  Based on the current time, provide recommendations for the following meal types: ${mealsToRecommend.join(', ')}.
+
+  Based on the user's profile, region (${country}, ${state}), dietary preferences, and what they've eaten today, provide personalized food recommendations that are both:
+  1. Suitable for their health goals (${user.goalType || 'maintain'})
+  2. Culturally appropriate for their region (${country}, ${state})
+  3. Nutritionally balanced to complement what they've already eaten today
   
-  IMPORTANT: All recommendations MUST be authentic Maharashtrian dishes from Indian cuisine. Include traditional dishes like Misal Pav, Poha, Varan Bhaat, Thalipeeth, Puran Poli, Modak, Sabudana Khichdi, Batata Vada, Pav Bhaji (Mumbai style), Kothimbir Vadi, etc. Adjust these dishes to meet the user's nutritional needs.
+  IMPORTANT: All recommendations MUST be authentic regional dishes from ${country} ${state !== 'Maharashtra' ? `(specifically from ${state} if possible)` : ''}. Include traditional dishes popular in that region, but adjust them to meet the user's nutritional needs.
   
-  For each meal type (breakfast, lunch, dinner, snack) that hasn't been logged yet, recommend 4 suitable Maharashtrian food options. If a meal has already been logged, don't provide recommendations for it.
+  For each meal type that needs to be recommended, provide 2-4 suitable food options. For example, if the user is from Maharashtra, India, include dishes like Misal Pav, Poha, etc. If from the Southern United States, include dishes like grilled chicken with collard greens, etc.
   
   Provide recommendations in the following JSON format:
   {
     "recommendations": [
       {
-        "foodName": "Name of recommended Maharashtrian dish",
+        "foodName": "Name of recommended regional dish",
         "mealTime": "breakfast|lunch|dinner|snack",
-        "reason": "Brief explanation of why this food is recommended",
+        "reason": "Brief explanation of why this food is recommended (must mention nutritional benefits and regional significance)",
         "isVegetarian": true|false,
         "description": "Brief description of the dish including traditional ingredients and preparation style",
         "nutrition": {
@@ -166,11 +192,14 @@ export async function GET(request: NextRequest) {
             bmi: user.bmi || 0,
             bmiCategory,
             goalType: user.goalType || 'maintain',
-            dietaryPreference: user.dietaryPreference || 'Not specified'
+            dietaryPreference: user.dietaryPreference || 'Not specified',
+            country: country,
+            state: state
           },
           currentNutrition,
           todaysFoodEntries: formattedFoodEntries,
-          recommendations: recommendationsData.recommendations
+          recommendations: recommendationsData.recommendations,
+          mealsToRecommend
         }
       });
 

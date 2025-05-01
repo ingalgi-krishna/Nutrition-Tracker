@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify the token - add await here
+    // Verify the token
     const decodedToken = await verifyToken(token);
     if (!decodedToken) {
       return NextResponse.json(
@@ -36,6 +36,8 @@ export async function POST(request: NextRequest) {
       activityLevel,
       age,
       gender,
+      country,  // New field for country
+      state,    // New field for state
     } = await request.json();
 
     await connectToDatabase();
@@ -57,6 +59,8 @@ export async function POST(request: NextRequest) {
         activityLevel,
         age,
         gender,
+        country,  // Save country
+        state,    // Save state
         onboardingCompleted: true,
       },
       { new: true }
@@ -72,7 +76,7 @@ export async function POST(request: NextRequest) {
     // Use type assertion to handle the _id type
     const userId = (updatedUser._id as Types.ObjectId).toString();
 
-    // Generate new token with updated onboarding status - add await here
+    // Generate new token with updated onboarding status
     const newToken = await generateToken({
       id: userId,
       name: updatedUser.name,
@@ -88,6 +92,8 @@ export async function POST(request: NextRequest) {
         name: updatedUser.name,
         email: updatedUser.email,
         onboardingCompleted: true,
+        country: updatedUser.country,
+        state: updatedUser.state,
       },
     });
 

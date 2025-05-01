@@ -16,10 +16,13 @@ import {
     ActivitySquare,
     Target,
     X,
-    PlusCircle
+    PlusCircle,
+    Globe,
+    MapPin
 } from 'lucide-react';
 import { OnboardingData } from '@/types/user';
 import { motion, AnimatePresence } from 'framer-motion';
+import { CountryDropdown, RegionDropdown } from 'react-country-region-selector';
 
 const dietaryOptions: { value: OnboardingData['dietaryPreference']; label: string; description: string; icon: string }[] = [
     { value: 'non-vegetarian', label: 'Non-Vegetarian', description: 'Includes all food groups', icon: '🥩' },
@@ -64,6 +67,8 @@ export default function OnboardingForm() {
         activityLevel: 'moderate',
         age: 0,
         gender: 'other',
+        country: '', // New field for country
+        state: '',   // New field for state
     });
 
     // Calculate BMI and TDEE
@@ -146,6 +151,22 @@ export default function OnboardingForm() {
         }));
     };
 
+    // Country and region handlers
+    const selectCountry = (val: string) => {
+        setFormData(prev => ({
+            ...prev,
+            country: val,
+            state: '' // Reset state when country changes
+        }));
+    };
+
+    const selectRegion = (val: string) => {
+        setFormData(prev => ({
+            ...prev,
+            state: val
+        }));
+    };
+
     const addAllergy = () => {
         if (allergyInput.trim() !== '' && !formData.allergies.includes(allergyInput.trim())) {
             setFormData((prev) => ({
@@ -177,7 +198,7 @@ export default function OnboardingForm() {
 
         switch (currentStep) {
             case 1:
-                if (!formData.height || !formData.weight || !formData.age) {
+                if (!formData.height || !formData.weight || !formData.age || !formData.country) {
                     setError('Please fill in all required fields');
                     return false;
                 }
@@ -443,6 +464,46 @@ export default function OnboardingForm() {
                                                     onChange={handleNumberChange}
                                                     className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#8BAA7C] focus:border-transparent transition-colors"
                                                     placeholder="Enter your weight"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Country field */}
+                                        <div>
+                                            <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
+                                                Country
+                                            </label>
+                                            <div className="relative">
+                                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                    <Globe className="h-5 w-5 text-gray-400" />
+                                                </div>
+                                                <CountryDropdown
+                                                    id="country"
+                                                    value={formData.country}
+                                                    onChange={selectCountry}
+                                                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#8BAA7C] focus:border-transparent transition-colors"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* State/Province field */}
+                                        <div>
+                                            <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
+                                                State/Province
+                                            </label>
+                                            <div className="relative">
+                                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                    <MapPin className="h-5 w-5 text-gray-400" />
+                                                </div>
+                                                <RegionDropdown
+                                                    id="state"
+                                                    country={formData.country}
+                                                    value={formData.state}
+                                                    onChange={selectRegion}
+                                                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#8BAA7C] focus:border-transparent transition-colors"
+                                                    disableWhenEmpty={true}
+                                                    blankOptionLabel="Select a state/province"
+                                                    defaultOptionLabel="Select a state/province"
                                                 />
                                             </div>
                                         </div>

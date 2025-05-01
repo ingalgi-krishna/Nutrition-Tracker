@@ -9,12 +9,14 @@ export interface IUser extends Document {
   height?: number;
   weight?: number;
   bmi?: number;
-  goalType?: 'weight_loss' | 'weight_gain' | 'maintain';
-  dietaryPreference?: 'vegetarian' | 'non-vegetarian' | 'vegan';
+  goalType?: 'weight_loss' | 'weight_gain' | 'maintain' | 'muscle_gain' | 'improve_health';
+  dietaryPreference?: 'vegetarian' | 'non-vegetarian' | 'vegan' | 'pescatarian' | 'keto' | 'paleo';
   allergies?: string[];
   activityLevel?: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
   age?: number;
   gender?: 'male' | 'female' | 'other';
+  country?: string; // New field for country
+  state?: string;   // New field for state/province
   onboardingCompleted: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -29,8 +31,14 @@ const UserSchema = new Schema<IUser>(
     height: { type: Number },
     weight: { type: Number },
     bmi: { type: Number },
-    goalType: { type: String, enum: ['weight_loss', 'weight_gain', 'maintain'] },
-    dietaryPreference: { type: String, enum: ['vegetarian', 'non-vegetarian', 'vegan'] },
+    goalType: {
+      type: String,
+      enum: ['weight_loss', 'weight_gain', 'maintain', 'muscle_gain', 'improve_health']
+    },
+    dietaryPreference: {
+      type: String,
+      enum: ['vegetarian', 'non-vegetarian', 'vegan', 'pescatarian', 'keto', 'paleo']
+    },
     allergies: [{ type: String }],
     activityLevel: {
       type: String,
@@ -38,6 +46,8 @@ const UserSchema = new Schema<IUser>(
     },
     age: { type: Number },
     gender: { type: String, enum: ['male', 'female', 'other'] },
+    country: { type: String }, // New field
+    state: { type: String },   // New field
     onboardingCompleted: { type: Boolean, default: false },
   },
   { timestamps: true }

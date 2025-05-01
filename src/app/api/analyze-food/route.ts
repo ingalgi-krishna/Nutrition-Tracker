@@ -9,11 +9,11 @@ import { uploadImage } from '@/lib/cloudinary';
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 // Helper function for fallback nutrition estimation
-async function estimateNutrition(foodName: string) {
+async function estimateNutrition(foodName: string, servingSize: string = "standard") {
     try {
-        // Make a specific call to Gemini for nutrition information
+        // Make a specific call to Gemini for nutrition information with serving size
         const nutritionPrompt = `
-      I need the average nutritional information for one serving of "${foodName}".
+      I need the average nutritional information for ${servingSize} serving of "${foodName}".
       Please provide only the numerical values for:
       - Calories (kcal)
       - Proteins (grams)
@@ -25,7 +25,8 @@ async function estimateNutrition(foodName: string) {
         "calories": number,
         "proteins": number,
         "carbs": number,
-        "fats": number
+        "fats": number,
+        "servingSize": "description of the serving size"
       }
     `;
 
@@ -48,7 +49,8 @@ async function estimateNutrition(foodName: string) {
             calories: 200,
             proteins: 10,
             carbs: 20,
-            fats: 8
+            fats: 8,
+            servingSize: "standard portion"
         };
     }
 }
@@ -97,21 +99,37 @@ export async function POST(request: NextRequest) {
             },
         };
 
-        // Enhanced prompt for better nutritional information extraction
+        // Enhanced prompt for better serving size estimation and nutritional information extraction
         const prompt = `
-      Analyze this food image and provide the following information:
-      1. The exact name of the food item you see in the image
-      2. Detailed nutritional information per serving including:
+      Analyze this food image in detail and provide the following information:
+      
+      1. The exact name of the food item(s) visible in the image
+      
+      2. SERVING SIZE ANALYSIS:
+         - Estimate the serving size based on visual cues (plate/bowl size, utensils, or other objects for scale)
+         - Also Count the number of food items (e.g., "2 slices of pizza", "1 bowl of salad", "2 Apples", "Two Donuts")
+         - Compare food portions to standard reference objects if visible (e.g., "size of a fist", "standard dinner plate")
+         - Identify volume or weight indicators (approx. grams, cups, tablespoons, etc.)
+         - Note if it appears to be a restaurant portion (typically larger) or home-prepared
+         - If multiple food items are present, analyze each component separately
+      
+      3. Detailed nutritional information for the SPECIFIC serving size you identified:
          - Calories (kcal)
          - Proteins (in grams)
          - Carbohydrates (in grams)
          - Fats (in grams)
       
-      It's CRITICAL that you return BOTH the food name AND numerical values for all nutritional information.
+      It's CRITICAL that you return numerical values for ALL nutritional information calibrated to the specific serving size you identified.
       
-      Respond in this exact JSON format without any deviation:
+      Respond in this exact JSON format:
       {
         "foodName": "Name of the food",
+        "servingAnalysis": {
+          "estimatedSize": "Detailed description of the estimated serving size",
+          "visualReferences": "Objects or indicators used for size comparison",
+          "portionType": "restaurant/home-cooked/packaged",
+          "approximateWeight": "Estimated weight in grams if possible"
+        },
         "nutrition": {
           "calories": number,
           "proteins": number,
@@ -123,6 +141,12 @@ export async function POST(request: NextRequest) {
       Example of correctly formatted response:
       {
         "foodName": "Chicken Caesar Salad",
+        "servingAnalysis": {
+          "estimatedSize": "Medium dinner plate, approximately 2 cups of salad",
+          "visualReferences": "Fork visible in image indicates restaurant-sized portion",
+          "portionType": "restaurant",
+          "approximateWeight": "350 grams"
+        },
         "nutrition": {
           "calories": 350,
           "proteins": 25,
@@ -131,7 +155,7 @@ export async function POST(request: NextRequest) {
         }
       }
       
-      Only provide this JSON structure with real numerical values, no text or explanations.
+      Only provide this JSON structure with real numerical values, no additional text or explanations.
     `;
 
         // Call the Gemini API
@@ -160,8 +184,11 @@ export async function POST(request: NextRequest) {
 
                 console.log('Nutrition data incomplete, using fallback estimation for:', foodData.foodName);
 
-                // Use fallback estimation based on the food name
-                const fallbackNutrition = await estimateNutrition(foodData.foodName);
+                // Get serving size info if available
+                const servingSizeDesc = foodData.servingAnalysis?.estimatedSize || "standard";
+
+                // Use fallback estimation based on the food name and serving size
+                const fallbackNutrition = await estimateNutrition(foodData.foodName, servingSizeDesc);
 
                 // Create or update the nutrition object
                 foodData.nutrition = {
@@ -169,6 +196,16 @@ export async function POST(request: NextRequest) {
                     proteins: fallbackNutrition.proteins,
                     carbs: fallbackNutrition.carbs,
                     fats: fallbackNutrition.fats
+                };
+            }
+
+            // Ensure servingAnalysis exists even if missing in response
+            if (!foodData.servingAnalysis) {
+                foodData.servingAnalysis = {
+                    estimatedSize: "Standard portion",
+                    visualReferences: "Not available",
+                    portionType: "unknown",
+                    approximateWeight: "Unknown"
                 };
             }
         } catch (parseError) {
@@ -188,6 +225,12 @@ export async function POST(request: NextRequest) {
 
                 foodData = {
                     foodName: foodName,
+                    servingAnalysis: {
+                        estimatedSize: "Standard portion",
+                        visualReferences: "Not available",
+                        portionType: "unknown",
+                        approximateWeight: "Unknown"
+                    },
                     nutrition: fallbackNutrition
                 };
             } catch (fallbackError) {
@@ -205,6 +248,7 @@ export async function POST(request: NextRequest) {
                 data: {
                     userId,
                     foodName: foodData.foodName,
+                    servingAnalysis: foodData.servingAnalysis,
                     nutrition: foodData.nutrition,
                     imageUrl: cloudinaryUrl // Return the Cloudinary URL
                 }

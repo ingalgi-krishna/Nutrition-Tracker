@@ -19,7 +19,10 @@ import {
     Activity,
     Heart,
     Leaf,
-    BarChart
+    BarChart,
+    Globe,
+    MapPin,
+    Clock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IRecommendation } from '@/types/food';
@@ -36,6 +39,8 @@ interface UserData {
     bmiCategory?: string;
     goalType: 'weight_loss' | 'weight_gain' | 'maintain';
     dietaryPreference?: string;
+    country?: string;
+    state?: string;
 }
 
 interface NutritionData {
@@ -133,6 +138,8 @@ export default function Recommendations() {
     const [error, setError] = useState<string | null>(null);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [refreshing, setRefreshing] = useState(false);
+    const [mealsToRecommend, setMealsToRecommend] = useState<string[]>([]);
+
     const handleRefresh = () => {
         setRefreshing(true);
         setRefreshTrigger(prev => prev + 1);
@@ -159,11 +166,14 @@ export default function Recommendations() {
                         bmi: data.data.user.bmi,
                         bmiCategory: data.data.user.bmiCategory,
                         goalType: data.data.user.goalType,
-                        dietaryPreference: data.data.user.dietaryPreference
+                        dietaryPreference: data.data.user.dietaryPreference,
+                        country: data.data.user.country,
+                        state: data.data.user.state
                     });
                     setCurrentNutrition(data.data.currentNutrition);
                     setTodaysFoodEntries(data.data.todaysFoodEntries || []);
                     setRecommendations(data.data.recommendations);
+                    setMealsToRecommend(data.data.mealsToRecommend || []);
                     setLoading(false);
                     setRefreshing(false);
                 } else {
@@ -213,6 +223,11 @@ export default function Recommendations() {
                     </div>
                     <h2 className="text-2xl font-bold text-[#010100]">
                         {config.title} Recommendations
+                        {!mealsToRecommend.includes(mealType) && (
+                            <span className="ml-3 text-sm font-normal text-gray-500">
+                                (Already logged today)
+                            </span>
+                        )}
                     </h2>
                 </div>
 
@@ -268,7 +283,9 @@ export default function Recommendations() {
                                 )}
 
                                 <div className="mb-4">
-                                    <h4 className="text-xs uppercase text-gray-500 font-semibold mb-1.5">Why This Works For You</h4>
+                                    <h4 className="text-xs uppercase text-gray-500 font-semibold mb-1.5">
+                                        {userData?.country ? `Regional Dish - Why This Works For You` : `Why This Works For You`}
+                                    </h4>
                                     <p className="text-gray-700 text-sm">
                                         {item.reason}
                                     </p>
@@ -371,7 +388,7 @@ export default function Recommendations() {
                         Your Personalized Nutrition Plan
                     </h1>
                     <p className="text-gray-600 mt-1">
-                        AI-generated recommendations based on your profile and dietary preferences
+                        AI-generated recommendations based on your profile, location, and dietary preferences
                     </p>
                 </div>
                 <button
@@ -430,6 +447,16 @@ export default function Recommendations() {
                                         {userData.dietaryPreference || 'No preference'}
                                     </span>
                                 </div>
+
+                                {/* Add region information */}
+                                {userData.country && (
+                                    <div className="flex items-center bg-white px-3 py-1.5 rounded-lg border border-[#ABD483]/20">
+                                        <Globe className="h-4 w-4 mr-1.5 text-[#8BAA7C]" />
+                                        <span className="font-semibold">
+                                            {userData.country} {userData.state && `, ${userData.state}`}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -453,6 +480,28 @@ export default function Recommendations() {
                                 </div>
                             </div>
                         )}
+                    </div>
+                </motion.div>
+            )}
+
+            {/* Regional cuisine highlight banner */}
+            {userData?.country && userData?.state && (
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="bg-white rounded-xl p-6 mb-8 border border-[#ABD483]/20 shadow-sm"
+                >
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-[#FC842D]/10 rounded-full flex items-center justify-center flex-shrink-0">
+                            <MapPin className="h-6 w-6 text-[#FC842D]" />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-lg text-[#010100]">Regional Cuisine Recommendations</h3>
+                            <p className="text-gray-600">
+                                Your meal recommendations are tailored to include traditional dishes from {userData.state}, {userData.country} that align with your nutritional goals.
+                            </p>
+                        </div>
                     </div>
                 </motion.div>
             )}
@@ -542,6 +591,29 @@ export default function Recommendations() {
                         </motion.div>
                     )}
                 </AnimatePresence>
+
+                {/* Current time context */}
+                {userData && mealsToRecommend && mealsToRecommend.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="bg-white rounded-lg p-4 mb-6 border border-[#ABD483]/20 shadow-sm"
+                    >
+                        <div className="flex items-center">
+                            <div className="mr-3 p-2 bg-[#ABD483]/10 rounded-full">
+                                <Clock className="h-5 w-5 text-[#8BAA7C]" />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-semibold text-[#010100]">Current Meal Suggestions</h3>
+                                <p className="text-xs text-gray-600">
+                                    Based on the current time, we're recommending: {mealsToRecommend.map(m =>
+                                        mealTimeConfig[m as keyof typeof mealTimeConfig].title).join(', ')}
+                                </p>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
 
                 {/* Render each meal section using the Bento grid layout */}
                 {renderMealSection('breakfast', breakfast)}

@@ -4,11 +4,114 @@ import { connectToDatabase } from '@/lib/mongodb';
 import WaterIntake from '@/models/WaterIntake';
 import User from '@/models/User';
 import { verifyToken } from '@/lib/jwt';
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { uploadImage } from '@/lib/cloudinary';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Initialize the Gemini API
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+
+// Helper function to get climate adjustment using Gemini
+const getClimateAdjustment = async (user: any) => {
+    try {
+        if (!user.country) {
+            return {
+                factor: 1.0,
+                reason: "No location data available for climate adjustment"
+            };
+        }
+
+        // Get current date for seasonal information
+        const currentDate = new Date();
+        const currentMonth = currentDate.getMonth() + 1; // 1-12 for Jan-Dec
+
+        // Prepare user context for Gemini
+        const userContext = {
+            country: user.country || 'Unknown',
+            state: user.state || 'Unknown',
+            activityLevel: user.activityLevel || 'moderate',
+            age: user.age || 30,
+            gender: user.gender || 'other',
+            weight: user.weight || 70,
+            currentMonth: currentMonth,
+            monthName: currentDate.toLocaleString('default', { month: 'long' })
+        };
+
+        // Create prompt for Gemini
+        const prompt = `
+      Based on the following user information, calculate a climate adjustment factor for daily water intake:
+      
+      - Country: ${userContext.country}
+      - State/Region: ${userContext.state}
+      - Current month: ${userContext.monthName} (month #${userContext.currentMonth})
+      - Activity level: ${userContext.activityLevel}
+      - Age: ${userContext.age}
+      - Gender: ${userContext.gender}
+      - Weight: ${userContext.weight} kg
+      
+      First, determine if the user is in the Northern or Southern Hemisphere based on their country.
+      
+      Then, calculate a climate adjustment factor (from 0.8 to 1.5) based on:
+      1. The user's location and current month
+      2. The typical climate for that region during this time of year
+      3. Whether it's summer or winter in their hemisphere
+      4. The user's activity level
+      
+      For example:
+      - Hot climates during summer months should have higher adjustment factors (1.2-1.5)
+      - Cold climates during winter months should have lower adjustment factors (0.8-1.0)
+      - Temperate climates should have moderate adjustment factors (1.0-1.2)
+      - Higher activity levels increase the adjustment factor
+      
+      Only respond in this exact JSON format:
+      {
+        "hemisphere": "Northern|Southern",
+        "season": "summer|winter|spring|fall",
+        "climateAdjustmentFactor": number,
+        "reason": "Brief explanation of the climate adjustment factor"
+      }
+    `;
+
+        // Call Gemini API
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
+
+        // Parse the JSON response
+        try {
+            // Extract JSON from the response
+            const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) ||
+                text.match(/```\s*([\s\S]*?)\s*```/) ||
+                [null, text];
+
+            const jsonString = jsonMatch[1] || text;
+            const climateData = JSON.parse(jsonString.trim());
+
+            return {
+                factor: climateData.climateAdjustmentFactor || 1.0,
+                hemisphere: climateData.hemisphere || "Unknown",
+                season: climateData.season || "Unknown",
+                reason: climateData.reason || "Based on your location and current season"
+            };
+        } catch (parseError) {
+            console.error('Error parsing climate data:', parseError);
+            return {
+                factor: 1.0,
+                hemisphere: "Unknown",
+                season: "Unknown",
+                reason: "Could not determine climate adjustment"
+            };
+        }
+    } catch (error) {
+        console.error('Error calculating climate adjustment with Gemini:', error);
+        return {
+            factor: 1.0,
+            hemisphere: "Unknown",
+            season: "Unknown",
+            reason: "Error calculating climate adjustment"
+        };
+    }
+};
 
 // Get water intake data for the day
 export async function GET(request: NextRequest) {
@@ -33,6 +136,11 @@ export async function GET(request: NextRequest) {
         }
 
         const userId = decodedToken.id;
+
+        // Get query parameters
+        const url = new URL(request.url);
+        const startDateParam = url.searchParams.get('startDate');
+        const endDateParam = url.searchParams.get('endDate');
 
         await connectToDatabase();
 
@@ -71,6 +179,8 @@ export async function GET(request: NextRequest) {
                     case 'very_active':
                         recommendedIntake = Math.round(recommendedIntake * 1.4); // +40%
                         break;
+                    default:
+                        break;
                 }
             }
 
@@ -81,20 +191,40 @@ export async function GET(request: NextRequest) {
         // Use user's set goal or the calculated recommendation
         const waterIntakeGoal = user.waterIntakeGoal || recommendedIntake;
 
-        // Get today's water intake entries
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
+        // Define date range - default to today
+        let startDate, endDate;
 
+        if (startDateParam && endDateParam) {
+            // Custom date range
+            startDate = new Date(startDateParam);
+            endDate = new Date(endDateParam);
+            endDate.setHours(23, 59, 59, 999); // Include full end day
+        } else {
+            // Today only (default)
+            startDate = new Date();
+            startDate.setHours(0, 0, 0, 0);
+            endDate = new Date();
+            endDate.setHours(23, 59, 59, 999);
+        }
+
+        // Get water intake entries
         const waterIntakes = await WaterIntake.find({
             userId,
-            timestamp: { $gte: today, $lt: tomorrow }
+            timestamp: { $gte: startDate, $lte: endDate }
         }).sort({ timestamp: -1 }); // Newest first
 
         // Calculate total intake
         const totalIntake = waterIntakes.reduce((sum, entry) => sum + entry.amount, 0);
         const progress = Math.min(Math.round((totalIntake / waterIntakeGoal) * 100), 100);
+
+        // Get climate adjustment using Gemini
+        const { factor: climateAdjustmentFactor, reason: climateReason, hemisphere, season } = await getClimateAdjustment(user);
+
+        // Calculate adjusted recommendation
+        const adjustedRecommendation = Math.round(waterIntakeGoal * climateAdjustmentFactor);
+
+        // Current month name
+        const currentMonth = new Date().toLocaleString('default', { month: 'long' });
 
         return NextResponse.json({
             success: true,
@@ -105,7 +235,13 @@ export async function GET(request: NextRequest) {
                 recommendedIntake,
                 progress,
                 unit: 'ml',
-                weight: user.weight || null
+                weight: user.weight || null,
+                climateAdjustmentFactor,
+                climateReason,
+                adjustedRecommendation,
+                hemisphere,
+                season,
+                month: currentMonth
             }
         });
     } catch (error) {
@@ -117,7 +253,7 @@ export async function GET(request: NextRequest) {
     }
 }
 
-// Add water intake entry manually
+// Add water intake entry
 export async function POST(request: NextRequest) {
     try {
         // Get token from cookies
@@ -140,7 +276,7 @@ export async function POST(request: NextRequest) {
         }
 
         const userId = decodedToken.id;
-        const { amount, method = 'manual', image = null } = await request.json();
+        const { amount, method = 'manual', image = null, timestamp = new Date() } = await request.json();
 
         if (!amount || amount <= 0) {
             return NextResponse.json(
@@ -172,7 +308,7 @@ export async function POST(request: NextRequest) {
             userId,
             amount,
             method,
-            timestamp: new Date(),
+            timestamp: new Date(timestamp),
             imageUrl
         });
 
@@ -254,7 +390,7 @@ export async function PUT(request: NextRequest) {
     }
 }
 
-// Delete a water intake entry
+// Delete a water intake entry - this is now handled by the [id] route
 export async function DELETE(request: NextRequest) {
     try {
         // Get token from cookies

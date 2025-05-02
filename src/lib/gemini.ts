@@ -38,7 +38,7 @@ export async function analyzeFoodImage(imageBase64: string): Promise<{
   try {
     // Get the Gemini Pro Vision model
     const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-pro',
+      model: 'gemini-2.0-flash-lite',
       safetySettings,
     });
 

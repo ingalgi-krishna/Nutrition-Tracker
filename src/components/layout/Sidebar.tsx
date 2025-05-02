@@ -12,7 +12,8 @@ import {
     BarChart,
     Calendar,
     LogOut,
-    Settings
+    Settings,
+    Droplet
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -51,6 +52,11 @@ const Sidebar: React.FC = () => {
             href: '/food-log',
             label: 'Food Log',
             icon: <Utensils className="h-5 w-5" />
+        },
+        {
+            href: '/water-tracker',
+            label: 'Water Tracker',
+            icon: <Droplet className="h-5 w-5" />
         },
         {
             href: '/recommendations',

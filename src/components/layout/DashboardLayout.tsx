@@ -15,7 +15,9 @@ import {
     X,
     Calendar,
     Settings,
-    Bell
+    Bell,
+    Droplet,
+    Wheat
 } from 'lucide-react';
 import { useAuth } from '@/components/Providers/AuthProvider';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -43,7 +45,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
     const navItems = [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-        { name: 'Food Log', href: '/food-log', icon: Utensils },
+        { name: 'Water Tracker', href: '/water-tracker', icon: Droplet },
+        { name: 'Food Log', href: '/food-log', icon: Wheat },
         { name: 'Recommendations', href: '/recommendations', icon: Lightbulb },
         { name: 'Analytics', href: '/analytics', icon: BarChart },
         { name: 'Profile', href: '/profile', icon: User },

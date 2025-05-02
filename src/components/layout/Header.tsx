@@ -126,7 +126,7 @@ const Header: React.FC = () => {
                                         <Droplet className="w-4 h-4" />
                                         <span>Water Intake</span>
                                     </div>
-                                    {isActive('/food-log') && <ActiveIndicator />}
+                                    {isActive('/water-tracker') && <ActiveIndicator />}
                                 </Link>
 
 
@@ -291,6 +291,18 @@ const Header: React.FC = () => {
                                     >
                                         <List className="h-5 w-5" />
                                         <span>Food Log</span>
+                                    </Link>
+
+                                    <Link
+                                        href="/water-tracker"
+                                        className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg text-base font-medium ${isActive('/food-log')
+                                            ? 'text-[#010100] bg-[#ABD483]/10 font-bold'
+                                            : 'text-gray-600 hover:bg-gray-50 hover:text-[#8BAA7C]'
+                                            } transition-colors duration-200`}
+                                        onClick={closeMenu}
+                                    >
+                                        <List className="h-5 w-5" />
+                                        <span>Water Intake</span>
                                     </Link>
 
                                     <Link
